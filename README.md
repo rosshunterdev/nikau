@@ -11,16 +11,6 @@ Built by Ross and Jove for SD205 (Integrated Studio III), Yoobee Colleges.
 - Ranks catalog activities for a client and gives a short reason for each pick
 - Role-based sign-in for coordinators and workers
 
-## Architecture
-
-Three independently deployable services in one repo (planned layout, names to be confirmed at scaffold):
-
-| Folder | Purpose |
-|---|---|
-| `frontend/` | Web UI |
-| `core-api/` | Clients, activity catalog, auth |
-| `ai-service/` | Matching and explanation service |
-
 ## Getting started
 
 Setup instructions will be added as each service is scaffolded.
