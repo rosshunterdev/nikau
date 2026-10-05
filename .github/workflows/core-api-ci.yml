@@ -1,0 +1,22 @@
+name: core-api-ci
+
+on:
+  pull_request:
+    paths:
+      - "services/core-api/**"
+      - ".github/workflows/core-api-ci.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/core-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14" # @ROSS - which Python version the Vercel projects use. CI should test on the version the live service runs on.
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: python -m pytest
