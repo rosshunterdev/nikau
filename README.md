@@ -94,3 +94,4 @@ Open http://localhost:5173
 ## Status
 
 Sprint 1: tools setup and wireframes.
+Sprint 2: architecture and foundations (in progress)
