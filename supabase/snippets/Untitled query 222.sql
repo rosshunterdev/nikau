@@ -1,0 +1,1 @@
+select 'high'::level > 'low'::level as high_beats_low;
