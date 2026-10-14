@@ -13,8 +13,8 @@ create type public.day_of_week as enum ('mon', 'tue', 'wed', 'thu', 'fri', 'sat'
 create type public.time_slot   as enum ('morning', 'afternoon', 'evening');
 
 -- Client fields
-create type public.support_needed as enum ('independent', 'worker_present', 'one_to_one');
-create type public.client_transport as enum ('public_transport_with_worker', 'public_transport_alone', 'worker_drives', 'mobility_taxi');
+create type public.support_needed as enum ('own', 'worker_present', 'one_to_one');
+create type public.client_transport as enum ('bus_train_with_worker', 'bus_train_alone', 'worker_drives', 'mobility_taxi');
 create type public.contributor as enum ('client', 'family_whanau', 'support_worker', 'coordinator');
 
 -- Activity fields
