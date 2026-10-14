@@ -20,10 +20,14 @@ create table public.profiles (
   is_active       boolean not null default true
 );
 
--- Suburb list, shared by clients and activities
+-- Suburb list, shared by clients and activities.
+-- Seeded from LINZ NZ Suburbs and Localities (CC BY 4.0) in the reference_data migration.
 create table public.suburbs (
-  suburb_id uuid primary key default gen_random_uuid(),
-  name      text not null unique
+  suburb_id             uuid primary key default gen_random_uuid(),
+  name                  text not null,
+  territorial_authority text not null,
+  -- The same name can exist under different councils, but not twice under one
+  constraint suburb_unique_per_council unique (name, territorial_authority)
 );
 
 -- The shared tag list: client interests and activity tags both point here
