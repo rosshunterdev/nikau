@@ -11,39 +11,9 @@ Built by Ross and Jove for SD205 (Integrated Studio III), Yoobee Colleges.
 - Ranks catalog activities for a client and gives a short reason for each pick
 - Role-based sign-in for coordinators and workers
 
-## Project structure
-
-```
-nikau/
-├── services/
-│   ├── core-api/          # FastAPI service: clients, activities, auth, database access
-│   │   ├── app/
-│   │   │   └── main.py    # App entry point and routes
-│   │   ├── tests/
-│   │   └── requirements.txt
-│   └── ai-matching/       # FastAPI service: activity matching and explanations
-│       ├── app/
-│       │   └── main.py
-│       ├── tests/
-│       └── requirements.txt
-├── frontend/              # React + TypeScript app (Vite)
-│   ├── src/
-│   ├── public/
-│   └── package.json
-├── .env.example           # Template for environment variables (copy to .env)
-├── .gitignore
-└── README.md
-```
-
-| Part | Tech | Local URL |
-| --- | --- | --- |
-| Frontend | React, TypeScript, Vite | http://localhost:5173 |
-| Core API | FastAPI | http://localhost:8000 |
-| AI Matching | FastAPI | http://localhost:8001 |
-
 ## Getting started
 
-Requires Python 3, Node.js and Git.
+Requires Python 3.14, Node.js and Git. The local database also needs Docker Desktop and the Supabase CLI (see [Local database](#local-database)).
 
 ```bash
 git clone <repo-url>
@@ -86,12 +56,80 @@ npm run dev
 
 Open http://localhost:5173
 
+## Project structure
+
+```
+nikau/
+├── .github/
+│   └── workflows/         # CI: frontend, core-api and ai-matching checks
+├── supabase/
+│   ├── config.toml        # Local Supabase settings
+│   ├── migrations/        # Database schema, applied in timestamp order
+│   └── seed.sql           # Local test data only (never pushed to the hosted project)
+├── services/
+│   ├── core-api/          # FastAPI service: clients, activities, auth, database access
+│   │   ├── app/
+│   │   │   └── main.py    # App entry point and routes
+│   │   ├── tests/
+│   │   └── requirements.txt
+│   └── ai-matching/       # FastAPI service: activity matching and explanations
+│       ├── app/
+│       │   └── main.py
+│       ├── tests/
+│       └── requirements.txt
+├── frontend/              # React + TypeScript app (Vite)
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── .env.example           # Template for environment variables (copy to .env)
+├── .gitignore
+└── README.md
+```
+
+| Part | Tech | Local URL |
+| --- | --- | --- |
+| Frontend | React, TypeScript, Vite | http://localhost:5173 |
+| Core API | FastAPI | http://localhost:8000 |
+| AI Matching | FastAPI | http://localhost:8001 |
+| Database | Supabase (Postgres), run locally in Docker | Studio: http://127.0.0.1:54323 · API: http://127.0.0.1:54321 |
+
+## Local database
+
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running)
+- Supabase CLI. On Windows: `scoop bucket add supabase https://github.com/supabase/scoop-bucket.git` then `scoop install supabase`
+
+### Commands (run from the repo root)
+```bash 
+supabase start      # starts local Supabase in Docker (first run downloads images)
+supabase db reset   # rebuilds the local database from supabase/migrations and supabase/seed.sql
+supabase stop       # stops it and keeps your data
+```
+
+### Test logins (local only)
+`supabase/seed.sql` creates fake staff for testing access rules. Password for all: `password123`.
+
+| Email | Role | Organisation |
+| --- | --- | --- |
+| cora@test.nikau | Coordinator | Test Org |
+| will@test.nikau | Support worker | Test Org |
+| olive@other.nikau | Coordinator | Other Org |
+
 ## Project management
 
 - Jira board and Confluence: https://sd205.atlassian.net
 - Branches and commits start with the Jira key, for example `SCRUM-40-supabase-setup`
 
+## Data sources
+
+- Suburb and locality names for the Wellington Region come from
+[NZ Suburbs and Localities](https://data.linz.govt.nz/layer/113764-nz-suburbs-and-localities/)
+by Toitū Te Whenua Land Information New Zealand.
+
+- Contains data sourced from the LINZ Data Service licensed for reuse under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
 ## Status
 
-Sprint 1: tools setup and wireframes.
-Sprint 2: architecture and foundations (in progress)
+- Sprint 1: tools setup and wireframes.
+- Sprint 2: architecture and foundations (in progress)
