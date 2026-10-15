@@ -1,6 +1,6 @@
 # Core API ↔ AI Matching contract
 
-**Ticket:** SCRUM-58 (B1) · **Version:** 0.1 draft, 14 Oct 2026 · **Owner:** Ross · **Reviewer:** Jove
+**Ticket:** SCRUM-58 (B1) · **Version:** 0.2 draft, 16 Oct 2026 · **Owner:** Ross · **Reviewer:** Jove
 
 This is the request and response between the Core API and the AI Matching service. Both sides build and test against it independently. Field names follow *SCRUM-50 Client and activity attributes v0.3* (with `birth_year` in place of `age_band`, as approved in the ERD).
 
@@ -11,16 +11,16 @@ Settle these with Jove before this doc is approved. Each has a proposed value us
 | # | Decision | Proposed |
 |---|---|---|
 | D1 | Service auth | Shared secret in `Authorization: Bearer <MATCHING_SERVICE_KEY>`, stored as a Vercel environment variable on both services |
-| D2 | Shortlist maximum, and which activities to keep when the pre-filter returns more | 30; selection rule to agree |
+| D2 | Shortlist maximum, and which activities to keep when the pre-filter returns more | 30. If the pre-filter returns more, the Core API keeps the top 30 by: (1) most interest tags shared with the client, (2) same suburb as the client, (3) lower `cost_per_session`, (4) `id`, so the cut is repeatable. The Core API also logs the pre-cap count. *Pending Jove's agreement* |
 | D3 | Result limit | Default 5, maximum 10 |
 | D4 | Timeout on the Core API side | 15 s |
-| D5 | Enum codes | Placeholder snake_case codes below; replace with the exact enum labels in the SCRUM-61 migrations |
+| D5 | Enum codes | The snake_case codes below follow SCRUM-50 v0.3. Jove is aligning the SCRUM-61 migrations to them (his migration had drifted from v0.3). If a code ever differs, the migrations win and this doc is updated. Each `(D5)` field is checked against the migrations once his fix lands |
 | D6 | `why_*` storage | Lists of strings here; if the `leads` columns are `text`, the Core API joins them with newlines |
 
 ## How a match runs
 
 1. The worker clicks **Find activities**.
-2. The Core API runs the nine v0.3 filter rules in plain code to build the shortlist.
+2. The Core API runs the nine v0.3 filter rules in plain code to build the shortlist. If more than 30 activities pass, it keeps 30 using the D2 selection rule.
 3. If the shortlist is empty, the Core API logs `no_candidates` and does **not** call AI Matching.
 4. The Core API sends the client's "To AI" fields and the shortlist to `POST /match`.
 5. AI Matching ranks the shortlist and explains each result, removes any activity that isn't on the shortlist, and returns at most `limit` results.
@@ -161,7 +161,7 @@ A `200` is logged as `success`.
 No auth. Returns `200` when the service is up:
 
 ```json
-{ "status": "ok", "contract_version": "0.1" }
+{ "status": "ok", "contract_version": "0.2" }
 ```
 
 It doesn't call Gemini, so it shows the service is running, not that the model is reachable.
@@ -310,3 +310,4 @@ A made-up client and two made-up activities. No real data.
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 14 Oct 2026 | First draft for review |
+| 0.2 | 16 Oct 2026 | Review changes: D2 selection rule proposed (and the Core API logs the pre-cap count); D5 reworded now that the SCRUM-61 migrations are being aligned to v0.3 |
