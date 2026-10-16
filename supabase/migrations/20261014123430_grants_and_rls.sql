@@ -1,7 +1,11 @@
 -- Grants and Row Level Security.
+-- PART 1: HELPER FUNCTIONS, GRANTS, RLS ON EVERY TABLE
+-- PART 2: CREATING CLIENTS, ASSIGNING WORKERS
+-- PART 3: LOOKUPS, STAFF, CATALOGUE, LEADS, MATCHING LOG
 
--- PART 1: helper functions, grants, RLS on every table, client visibility.
--- --------------------------------------------------------------------------------------------------------------- --
+
+-- PART 1: HELPER FUNCTIONS, GRANTS, RLS ON EVERY TABLE
+---------------------------------------------------------------------------------------------------------------
 -- HELPER FUNCTIONS
 -- SECURITY DEFINER: the function runs with its owner's rights, so it can read
 -- profiles and client_assignments even though those tables have RLS too.
@@ -38,7 +42,8 @@ as $$
     where client_id = p_client_id and user_id = auth.uid()
   );
 $$;
--- --------------------------------------------------------------------------------------------------------------- --
+
+---------------------------------------------------------------------------------------------------------------
 -- GRANTS:
 -- anon = not signed in. Nīkau has no public pages, so anon gets no table access at all.
 revoke all on all tables in schema public from anon;
@@ -62,7 +67,8 @@ alter table public.activity_tags       enable row level security;
 alter table public.activity_sessions   enable row level security;
 alter table public.matching_log        enable row level security;
 alter table public.leads               enable row level security;
--- --------------------------------------------------------------------------------------------------------------- --
+
+---------------------------------------------------------------------------------------------------------------
 -- PART 2: CREATING CLIENTS, ASSIGNING WORKERS
 
 -- Is this staff member active and in my organisation?
@@ -178,3 +184,105 @@ on public.client_availability for all
 to authenticated
 using (public.can_see_client(client_id))
 with check (public.can_see_client(client_id));
+
+---------------------------------------------------------------------------------------------------------------
+-- PART 3: LOOKUPS, STAFF, CATALOGUE, LEADS, MATCHING LOG
+
+-- Is the signed-in person active staff in any organisation?
+create function public.is_active_staff()
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select public.my_organisation_id() is not null;
+$$;
+
+-- Lookups: any active staff member can read; changes only come through migrations
+create policy "Staff read suburbs"
+on public.suburbs for select to authenticated
+using (public.is_active_staff());
+
+create policy "Staff read tags"
+on public.tags for select to authenticated
+using (public.is_active_staff());
+
+-- Organisations: only your own
+create policy "Staff see their organisation"
+on public.organisations for select to authenticated
+using (organisation_id = public.my_organisation_id());
+
+-- Profiles: yourself (even if inactive, so the app can say so), plus colleagues
+create policy "Staff see themselves and colleagues"
+on public.profiles for select to authenticated
+using (user_id = auth.uid() or organisation_id = public.my_organisation_id());
+
+-- Providers: all staff read, coordinators add and edit
+create policy "Staff read providers"
+on public.providers for select to authenticated
+using (public.is_active_staff());
+
+create policy "Coordinators add providers"
+on public.providers for insert to authenticated
+with check (public.is_coordinator());
+
+create policy "Coordinators edit providers"
+on public.providers for update to authenticated
+using (public.is_coordinator())
+with check (public.is_coordinator());
+
+-- Activities: all staff read, coordinators add and edit.
+-- No delete policy: deleting an activity would also delete saved leads.
+create policy "Staff read activities"
+on public.activities for select to authenticated
+using (public.is_active_staff());
+
+create policy "Coordinators add activities"
+on public.activities for insert to authenticated
+with check (public.is_coordinator() and created_by = auth.uid());
+
+create policy "Coordinators edit activities"
+on public.activities for update to authenticated
+using (public.is_coordinator())
+with check (public.is_coordinator());
+
+-- Activity tags and sessions: all staff read, coordinators manage
+create policy "Staff read activity tags"
+on public.activity_tags for select to authenticated
+using (public.is_active_staff());
+
+create policy "Coordinators manage activity tags"
+on public.activity_tags for all to authenticated
+using (public.is_coordinator())
+with check (public.is_coordinator());
+
+create policy "Staff read activity sessions"
+on public.activity_sessions for select to authenticated
+using (public.is_active_staff());
+
+create policy "Coordinators manage activity sessions"
+on public.activity_sessions for all to authenticated
+using (public.is_coordinator())
+with check (public.is_coordinator());
+
+-- Leads follow the client: if you can see the client, you can see, save and remove its leads.
+-- No update policy: a saved lead is a snapshot of what the AI said at the time.
+create policy "Staff see leads of permitted clients"
+on public.leads for select to authenticated
+using (public.can_see_client(client_id));
+
+create policy "Staff save leads for permitted clients"
+on public.leads for insert to authenticated
+with check (public.can_see_client(client_id) and saved_by = auth.uid());
+
+create policy "Staff remove leads of permitted clients"
+on public.leads for delete to authenticated
+using (public.can_see_client(client_id));
+
+-- Matching log: staff log their own requests and can read them back
+-- (the Core API needs the request_id back to link saved leads)
+create policy "Staff log their own matching requests"
+on public.matching_log for insert to authenticated
+with check (organisation_id = public.my_organisation_id() and requested_by = auth.uid());
+
+create policy "Staff read their own matching requests"
+on public.matching_log for select to authenticated
+using (requested_by = auth.uid());

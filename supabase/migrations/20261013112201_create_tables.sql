@@ -1,6 +1,11 @@
 -- NOTE: Tables, built in dependency order: a table can only reference tables created above it.
+-- PART 1: CORE AND LOOKUP TABLES
+-- PART 2: CLIENTS
+-- PART 3: ACTIVITIES
+-- PART 4: MATCHING
 
--- BATCH 1: CORE AND LOOKUP TABLES
+---------------------------------------------------------------------------------------------------------------
+-- PART 1: CORE AND LOOKUP TABLES
 
 -- Each support organisation (coordinators see all clients in their organisation)
 create table public.organisations (
@@ -50,8 +55,8 @@ create table public.providers (
   constraint consent_needs_date check (consent_given = false or consent_date is not null)
 );
 
--- --------------------------------------------------------------------------------------------------------------- --
--- BATCH 2: CLIENTS
+---------------------------------------------------------------------------------------------------------------
+-- PART 2: CLIENTS
 
 -- Reusable trigger function: stamps updated_at whenever a row is changed
 create function public.set_updated_at()
@@ -120,8 +125,8 @@ create table public.client_availability (
   primary key (client_id, day, slot)
 );
 
--- --------------------------------------------------------------------------------------------------------------- --
--- BATCH 3: ACTIVITIES (the catalogue is shared across all organisations, so no organisation_id)
+---------------------------------------------------------------------------------------------------------------
+-- PART 3: ACTIVITIES (the catalogue is shared across all organisations, so no organisation_id)
 
 -- An activity in the catalogue (SCRUM-50 v0.3 activity attributes)
 create table public.activities (
@@ -180,8 +185,8 @@ create table public.activity_sessions (
   constraint session_ends_after_start check (end_time > start_time)
 );
 
--- --------------------------------------------------------------------------------------------------------------- --
--- BATCH 4: MATCHING
+---------------------------------------------------------------------------------------------------------------
+-- PART 4: MATCHING
 
 -- One row per AI matching request: performance and outcome only, no client details
 create table public.matching_log (

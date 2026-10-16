@@ -1,8 +1,11 @@
 -- Reference data the app needs in every environment, including production.
 -- (Fake test data lives in supabase/seed.sql instead, which only runs locally.)
 -- `on conflict ... do nothing` makes each insert safe to run twice.
+-- PART 1: SUBURBS
+-- PART 2: TAGS
 
--- ============ Suburbs ============
+---------------------------------------------------------------------------------------------------------------
+-- PART 1: SUBURBS
 -- Wellington Region: Wellington City, Lower Hutt City, Upper Hutt City, Porirua City,
 -- Kapiti Coast District, Masterton District, Carterton District, South Wairarapa District.
 -- Only types 'Suburb' and 'Locality' (places people live); lakes, islands, bays and
@@ -260,7 +263,8 @@ insert into public.suburbs (name, territorial_authority) values
   ('Ōwhiro Bay', 'Wellington City')
 on conflict (name, territorial_authority) do nothing;
 
--- ============ Tags ============
+---------------------------------------------------------------------------------------------------------------
+-- PART 2: TAGS
 -- The shared tag list from SCRUM-50 v0.3 (owned by Ross). Adding a tag later = a new migration with an insert.
 insert into public.tags (name) values
   ('Animals'),

@@ -1,6 +1,7 @@
 -- Enums: fixed lists of allowed values, used by the table columns.
 -- Values follow SCRUM-50 v0.3. Empty (NULL) means "unknown", so there is no 'unknown' value.
 
+---------------------------------------------------------------------------------------------------------------
 -- Who a staff member is
 create type public.user_role as enum ('support_worker', 'coordinator');
 
