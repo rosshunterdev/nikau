@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import SignIn from './pages/SignIn'
 
 type Profile = {
+  user_id: string
   first_name: string
   role: 'support_worker' | 'coordinator'
   is_active: boolean
@@ -29,13 +30,10 @@ export default function App() {
 
   // 2. When there's a session, load the person's profile to get their role
   useEffect(() => {
-    if (!session) {
-      setProfile(null)
-      return
-    }
+    if (!session) return // nothing to load; an old profile is ignored below
     supabase
       .from('profiles')
-      .select('first_name, role, is_active')
+      .select('user_id, first_name, role, is_active')
       .eq('user_id', session.user.id)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -52,15 +50,19 @@ export default function App() {
       })
   }, [session])
 
+  // Only use the profile if it belongs to whoever is signed in right now
+  const currentProfile =
+    session && profile?.user_id === session.user.id ? profile : null
+
   if (checking) return <p>Loading…</p>
   if (!session) return <SignIn notice={notice} />
-  if (!profile) return <p>Loading…</p>
+  if (!currentProfile) return <p>Loading…</p>
 
   // Placeholder home screen until the real screens are built
   return (
     <main style={{ padding: 24 }}>
-      <h1>Kia ora, {profile.first_name}</h1>
-      <p>Signed in as {profile.role === 'coordinator' ? 'Coordinator' : 'Support worker'}</p>
+      <h1>Kia ora, {currentProfile.first_name}</h1>
+      <p>Signed in as {currentProfile.role === 'coordinator' ? 'Coordinator' : 'Support worker'}</p>
       <button onClick={() => supabase.auth.signOut()}>Sign out</button>
     </main>
   )
