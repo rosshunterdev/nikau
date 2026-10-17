@@ -1,8 +1,9 @@
-"""Shapes of client data sent by the API (core fields only for now)."""
+"""Shapes of client data the API sends and receives (core fields only for now)."""
 
 from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.enums import ClientTransport, Day, Level, Slot, SupportNeeded
 
@@ -40,3 +41,20 @@ class ClientDetail(BaseModel):
     interests: list[str] = []  # tag ids
     availability: list[AvailabilitySlot] = []
     updated_at: datetime
+
+
+class ClientCreate(BaseModel):
+    """What the 'Add a client' form sends. Only the name is required."""
+
+    preferred_name: str = Field(min_length=1, max_length=100)
+    suburb_id: UUID | None = None
+    birth_year: int | None = Field(default=None, ge=1900, le=2100)
+    support_needed: SupportNeeded | None = None
+    max_physical_demand: Level | None = None
+    needs_step_free: bool | None = None
+    max_sensory_load: Level | None = None
+    sensory_hard_limit: bool = False
+    transport: list[ClientTransport] = []
+    max_cost: float | None = Field(default=None, ge=0)
+    interests: list[UUID] = []  # tag ids
+    availability: list[AvailabilitySlot] = []

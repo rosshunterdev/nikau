@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 
-from app.deps import Caller, get_caller
+from app.deps import CurrentCaller
 
 router = APIRouter(tags=["me"])  # "tags" groups this route on the /docs page
 
 
 @router.get("/me")
-def read_me(caller: Caller = Depends(get_caller)):
+def read_me(caller: CurrentCaller):
     """The signed-in staff member's profile: name, role and organisation."""
 
     # Get this user's own profile (RLS also allows it)

@@ -13,3 +13,8 @@ def test_list_clients_requires_sign_in():
 
 def test_get_client_requires_sign_in():
     assert client.get(f"/clients/{SAM_ID}").status_code == 401
+
+
+def test_create_client_requires_sign_in():
+    response = client.post("/clients", json={"preferred_name": "Test"})
+    assert response.status_code == 401

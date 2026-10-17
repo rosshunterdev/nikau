@@ -1,10 +1,12 @@
 """Helpers that run before routes. Here: check who is signed in."""
 
 from dataclasses import dataclass
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from supabase import Client, create_client
+from supabase_auth.errors import AuthError
 
 from app.config import settings
 
@@ -21,7 +23,7 @@ class Caller:
 
 
 def get_caller(
-    creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+    creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
 ) -> Caller:
     """Check the sign-in token. Routes that use this are protected automatically."""
 
@@ -35,7 +37,7 @@ def get_caller(
     # Ask Supabase if the token is real and not expired
     try:
         result = db.auth.get_user(token)
-    except Exception:
+    except AuthError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired sign-in")
     if result is None or result.user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired sign-in")
@@ -43,3 +45,7 @@ def get_caller(
     # Database queries now run as this user, so our RLS rules apply
     db.postgrest.auth(token)
     return Caller(user_id=result.user.id, db=db)
+
+
+# Shortcut for routes: "caller: CurrentCaller" means "must be signed in"
+CurrentCaller = Annotated[Caller, Depends(get_caller)]
