@@ -80,6 +80,19 @@ def my_organisation_id(caller: Caller) -> str:
 def create_client(body: ClientCreate, caller: CurrentCaller):
     """Add a client. Organisation and creator come from your sign-in, not the form."""
 
+    # 0. Check every interest tag exists BEFORE saving anything,
+    #    so a bad tag can't leave a half-saved client behind
+    tag_ids = {str(t) for t in body.interests}
+    if tag_ids:
+        found = (
+            caller.db.table("tags")
+            .select("tag_id")
+            .in_("tag_id", list(tag_ids))
+            .execute()
+        )
+        if len(found.data) != len(tag_ids):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown interest tag")
+
     # 1. The client row (interests and availability live in their own tables)
     row = body.model_dump(mode="json", exclude={"interests", "availability"})
     row["organisation_id"] = my_organisation_id(caller)
@@ -89,8 +102,8 @@ def create_client(body: ClientCreate, caller: CurrentCaller):
         res = caller.db.table("clients").insert(row).execute()
         client_id = res.data[0]["client_id"]
 
-        # 2. Interests (set() drops any duplicates)
-        tags = [{"client_id": client_id, "tag_id": str(t)} for t in set(body.interests)]
+        # 2. Interests (tag_ids is already a set, so no duplicates)
+        tags = [{"client_id": client_id, "tag_id": t} for t in tag_ids]
         if tags:
             caller.db.table("client_interests").insert(tags).execute()
 
@@ -101,7 +114,7 @@ def create_client(body: ClientCreate, caller: CurrentCaller):
             caller.db.table("client_availability").insert(slots).execute()
 
     except APIError:
-        # e.g. a suburb or tag id that doesn't exist
+        # e.g. a suburb id that doesn't exist
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "Could not save client. Check the suburb and interests.",
