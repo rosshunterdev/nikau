@@ -58,3 +58,21 @@ class ClientCreate(BaseModel):
     max_cost: float | None = Field(default=None, ge=0)
     interests: list[UUID] = []  # tag ids
     availability: list[AvailabilitySlot] = []
+
+
+class ClientUpdate(BaseModel):
+    """Edit a client. Only the fields you send are changed.
+    Sending interests or availability replaces the whole list."""
+
+    preferred_name: str | None = Field(None, min_length=1, max_length=100)
+    suburb_id: UUID | None = None
+    birth_year: int | None = Field(None, ge=1900, le=2100)
+    support_needed: SupportNeeded | None = None
+    max_physical_demand: Level | None = None
+    needs_step_free: bool | None = None
+    max_sensory_load: Level | None = None
+    sensory_hard_limit: bool | None = None
+    transport: list[ClientTransport] | None = None
+    max_cost: float | None = Field(None, ge=0)
+    interests: list[UUID] | None = None
+    availability: list[AvailabilitySlot] | None = None
