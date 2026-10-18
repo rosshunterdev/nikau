@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import SignIn from './pages/SignIn'
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router'
+import ClientList from './pages/ClientList'
+import ClientForm from './pages/ClientForm'
 
 type Profile = {
   user_id: string
@@ -58,12 +61,28 @@ export default function App() {
   if (!session) return <SignIn notice={notice} />
   if (!currentProfile) return <p>Loading…</p>
 
-  // Placeholder home screen until the real screens are built
+    // Signed in: a simple header, then whichever page matches the address
   return (
-    <main style={{ padding: 24 }}>
-      <h1>Kia ora, {currentProfile.first_name}</h1>
-      <p>Signed in as {currentProfile.role === 'coordinator' ? 'Coordinator' : 'Support worker'}</p>
-      <button onClick={() => supabase.auth.signOut()}>Sign out</button>
-    </main>
+    <BrowserRouter>
+      <header style={{ display: 'flex', gap: 16, alignItems: 'center', padding: 16 }}>
+        <strong>Nīkau</strong>
+        <Link to="/clients">Clients</Link>
+        <span style={{ marginLeft: 'auto' }}>
+          {currentProfile.first_name} ·{' '}
+          {currentProfile.role === 'coordinator' ? 'Coordinator' : 'Support worker'}
+        </span>
+        <button onClick={() => supabase.auth.signOut()}>Sign out</button>
+      </header>
+
+      <main style={{ padding: 16 }}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/clients" replace />} />
+          <Route path="/clients" element={<ClientList />} />
+          <Route path="/clients/new" element={<ClientForm />} />
+          <Route path="/clients/:id" element={<ClientForm />} />
+          <Route path="*" element={<p>Page not found.</p>} />
+        </Routes>
+      </main>
+    </BrowserRouter>
   )
 }
