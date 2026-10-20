@@ -1,21 +1,20 @@
 # Core API ↔ AI Matching contract
 
-**Ticket:** SCRUM-58 (B1) · **Version:** 0.2 draft, 16 Oct 2026 · **Owner:** Ross · **Reviewer:** Jove
+**Ticket:** SCRUM-58 (B1) · **Version:** 0.3, 20 Oct 2026 · **Owner:** Ross · **Reviewer:** Jove
 
 This is the request and response between the Core API and the AI Matching service. Both sides build and test against it independently. Field names follow *SCRUM-50 Client and activity attributes v0.3* (with `birth_year` in place of `age_band`, as approved in the ERD).
 
-## Open decisions
+## Decisions
 
-Settle these with Jove before this doc is approved. Each has a proposed value used in the rest of the doc.
+Agreed with Jove in the PR #5 review.
 
 | # | Decision | Proposed |
 |---|---|---|
 | D1 | Service auth | Shared secret in `Authorization: Bearer <MATCHING_SERVICE_KEY>`, stored as a Vercel environment variable on both services |
-| D2 | Shortlist maximum, and which activities to keep when the pre-filter returns more | 30. If the pre-filter returns more, the Core API keeps the top 30 by: (1) most interest tags shared with the client, (2) same suburb as the client, (3) lower `cost_per_session`, (4) `id`, so the cut is repeatable. The Core API also logs the pre-cap count. *Pending Jove's agreement* |
-| D3 | Result limit | Default 5, maximum 10 |
+| D2 | Shortlist maximum, and which activities to keep when the pre-filter returns more | 30. If the pre-filter returns more, the Core API keeps the top 30 by: (1) most interest tags shared with the client, (2) same suburb as the client, (3) lower `cost_per_session`, with activities that have no cost listed going last, (4) `id`, so the cut is repeatable. In SQL: `order by shared_tags desc, (a.suburb_id = client_suburb_id) desc, a.cost_per_session asc nulls last, a.activity_id limit 30` || D3 | Result limit | Default 5, maximum 10 |
 | D4 | Timeout on the Core API side | 15 s |
-| D5 | Enum codes | The snake_case codes below follow SCRUM-50 v0.3. Jove is aligning the SCRUM-61 migrations to them (his migration had drifted from v0.3). If a code ever differs, the migrations win and this doc is updated. Each `(D5)` field is checked against the migrations once his fix lands |
-| D6 | `why_*` storage | Lists of strings here; if the `leads` columns are `text`, the Core API joins them with newlines |
+| D5 | Enum codes | Resolved: matches SCRUM-50 v0.3 and the SCRUM-61 enums migration |
+| D6 | `why_*` storage | Lists of strings here; if the `leads` columns are `text`, the Core API joins them with newlines | Agreed: leads.why_* are text, so the Core API joins with newlines
 
 ## How a match runs
 
@@ -161,7 +160,7 @@ A `200` is logged as `success`.
 No auth. Returns `200` when the service is up:
 
 ```json
-{ "status": "ok", "contract_version": "0.2" }
+{ "status": "ok", "contract_version": "0.3" }
 ```
 
 It doesn't call Gemini, so it shows the service is running, not that the model is reachable.
@@ -311,3 +310,4 @@ A made-up client and two made-up activities. No real data.
 |---|---|---|
 | 0.1 | 14 Oct 2026 | First draft for review |
 | 0.2 | 16 Oct 2026 | Review changes: D2 selection rule proposed (and the Core API logs the pre-cap count); D5 reworded now that the SCRUM-61 migrations are being aligned to v0.3 |
+| 0.3 | 20 Oct 2026 | Decisions agreed in review: D2 adds no-cost-last and the SQL order; D5 resolved against the SCRUM-61 enums; D1, D3, D4, D6 confirmed. Pre-cap count removed (no column in matching_log) |
