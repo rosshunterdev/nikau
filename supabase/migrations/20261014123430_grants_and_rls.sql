@@ -149,6 +149,24 @@ create trigger clients_assign_creator
   after insert on public.clients
   for each row execute function public.assign_client_creator();
 
+-- created_by can't change after the client is created.
+-- RLS can't compare old and new values, so a trigger does it.
+create function public.keep_client_creator()
+returns trigger
+language plpgsql set search_path = ''
+as $$
+begin
+  if new.created_by is distinct from old.created_by then
+    raise exception 'created_by cannot be changed' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger clients_keep_creator
+  before update on public.clients
+  for each row execute function public.keep_client_creator();
+
 -- Assignments: visible alongside the client
 create policy "Staff see assignments of permitted clients"
 on public.client_assignments for select
