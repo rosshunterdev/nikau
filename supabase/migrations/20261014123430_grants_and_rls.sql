@@ -257,15 +257,24 @@ using (
                   where p.provider_id = activities.provider_id and p.consent_given))
 );
 
+create policy "Coordinators add activities"
+on public.activities for insert to authenticated
+with check (public.is_coordinator() and created_by = auth.uid());
+
+create policy "Coordinators edit activities"
+on public.activities for update to authenticated
+using (public.is_coordinator())
+with check (public.is_coordinator());
+
 -- Activity tags and sessions: visible only if you can see the activity.
 -- The exists() runs under the activities policy, so the consent rule lives in one place.
+-- Coordinators manage them.
 create policy "Staff read tags of visible activities"
 on public.activity_tags for select to authenticated
 using (exists (select 1 from public.activities a where a.activity_id = activity_tags.activity_id));
 
--- UPDATE for SCRUM-61: coordinators can add and edit activities, but only for consented providers.
-create policy "Coordinators edit activities"
-on public.activities for update to authenticated
+create policy "Coordinators manage activity tags"
+on public.activity_tags for all to authenticated
 using (public.is_coordinator())
 with check (public.is_coordinator());
 
@@ -273,19 +282,16 @@ create policy "Staff read sessions of visible activities"
 on public.activity_sessions for select to authenticated
 using (exists (select 1 from public.activities a where a.activity_id = activity_sessions.activity_id));
 
-create policy "Coordinators manage activity tags"
-on public.activity_tags for all to authenticated
-using (public.is_coordinator())
-with check (public.is_coordinator());
-
-create policy "Staff read activity sessions"
-on public.activity_sessions for select to authenticated
-using (public.is_active_staff());
-
 create policy "Coordinators manage activity sessions"
 on public.activity_sessions for all to authenticated
 using (public.is_coordinator())
 with check (public.is_coordinator());
+
+-- Leads follow the client: if you can see the client, you can see, save and remove its leads.
+-- No update policy: a saved lead is a snapshot of what the AI said at the time.
+create policy "Staff see leads of permitted clients"
+on public.leads for select to authenticated
+using (public.can_see_client(client_id));
 
 -- Saving a lead: you must be able to see both the client and the activity,
 -- so nobody can save a hidden activity by guessing its id.
@@ -310,11 +316,12 @@ with check (organisation_id = public.my_organisation_id() and requested_by = aut
 create policy "Staff read their own matching requests"
 on public.matching_log for select to authenticated
 using (requested_by = auth.uid());
-
 ---------------------------------------------------------------------------------------------------------------
 -- FUNCTION ACCESS
-
+-- The helpers are for policies, not for calling directly. Postgres lets everyone (public)
+-- run new functions by default, so anon could call them through /rest/v1/rpc/.
 -- Only signed-in staff need them: policies run as authenticated.
+
 revoke execute on function
   public.my_organisation_id(),
   public.is_coordinator(),
