@@ -215,10 +215,12 @@ create policy "Staff see themselves and colleagues"
 on public.profiles for select to authenticated
 using (user_id = auth.uid() or organisation_id = public.my_organisation_id());
 
--- Providers: all staff read, coordinators add and edit
-create policy "Staff read providers"
+-- Providers: coordinators see all (they follow up consent).
+-- Other staff only see providers who agreed to be listed (SCRUM-50 consent gate),
+-- so contact details of non-consented providers stay hidden.
+create policy "Staff read consented providers"
 on public.providers for select to authenticated
-using (public.is_active_staff());
+using (public.is_active_staff() and (public.is_coordinator() or consent_given));
 
 create policy "Coordinators add providers"
 on public.providers for insert to authenticated
@@ -229,25 +231,32 @@ on public.providers for update to authenticated
 using (public.is_coordinator())
 with check (public.is_coordinator());
 
--- Activities: all staff read, coordinators add and edit.
--- No delete policy: deleting an activity would also delete saved leads.
-create policy "Staff read activities"
+-- Activities: coordinators see all; other staff only see activities from consented providers.
+-- Coordinators add and edit. No delete policy: deleting an activity would also delete saved leads.
+create policy "Staff read activities from consented providers"
 on public.activities for select to authenticated
-using (public.is_active_staff());
+using (
+  public.is_active_staff()
+  and (public.is_coordinator()
+       or exists (select 1 from public.providers p
+                  where p.provider_id = activities.provider_id and p.consent_given))
+);
 
-create policy "Coordinators add activities"
-on public.activities for insert to authenticated
-with check (public.is_coordinator() and created_by = auth.uid());
+-- Activity tags and sessions: visible only if you can see the activity.
+-- The exists() runs under the activities policy, so the consent rule lives in one place.
+create policy "Staff read tags of visible activities"
+on public.activity_tags for select to authenticated
+using (exists (select 1 from public.activities a where a.activity_id = activity_tags.activity_id));
 
+-- UPDATE for SCRUM-61: coordinators can add and edit activities, but only for consented providers.
 create policy "Coordinators edit activities"
 on public.activities for update to authenticated
 using (public.is_coordinator())
 with check (public.is_coordinator());
 
--- Activity tags and sessions: all staff read, coordinators manage
-create policy "Staff read activity tags"
-on public.activity_tags for select to authenticated
-using (public.is_active_staff());
+create policy "Staff read sessions of visible activities"
+on public.activity_sessions for select to authenticated
+using (exists (select 1 from public.activities a where a.activity_id = activity_sessions.activity_id));
 
 create policy "Coordinators manage activity tags"
 on public.activity_tags for all to authenticated
@@ -263,15 +272,15 @@ on public.activity_sessions for all to authenticated
 using (public.is_coordinator())
 with check (public.is_coordinator());
 
--- Leads follow the client: if you can see the client, you can see, save and remove its leads.
--- No update policy: a saved lead is a snapshot of what the AI said at the time.
-create policy "Staff see leads of permitted clients"
-on public.leads for select to authenticated
-using (public.can_see_client(client_id));
-
+-- Saving a lead: you must be able to see both the client and the activity,
+-- so nobody can save a hidden activity by guessing its id.
 create policy "Staff save leads for permitted clients"
 on public.leads for insert to authenticated
-with check (public.can_see_client(client_id) and saved_by = auth.uid());
+with check (
+  public.can_see_client(client_id)
+  and saved_by = auth.uid()
+  and exists (select 1 from public.activities a where a.activity_id = leads.activity_id)
+);
 
 create policy "Staff remove leads of permitted clients"
 on public.leads for delete to authenticated
