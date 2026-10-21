@@ -313,3 +313,29 @@ with check (organisation_id = public.my_organisation_id() and requested_by = aut
 create policy "Staff read their own matching requests"
 on public.matching_log for select to authenticated
 using (requested_by = auth.uid());
+
+---------------------------------------------------------------------------------------------------------------
+-- FUNCTION ACCESS
+
+-- Only signed-in staff need them: policies run as authenticated.
+revoke execute on function
+  public.my_organisation_id(),
+  public.is_coordinator(),
+  public.is_assigned_to(uuid),
+  public.is_in_my_organisation(uuid),
+  public.can_see_client(uuid),
+  public.is_active_staff()
+from public, anon;
+
+grant execute on function
+  public.my_organisation_id(),
+  public.is_coordinator(),
+  public.is_assigned_to(uuid),
+  public.is_in_my_organisation(uuid),
+  public.can_see_client(uuid),
+  public.is_active_staff()
+to authenticated;
+
+-- Same for functions added by future migrations
+alter default privileges revoke execute on functions from public;
+alter default privileges in schema public revoke execute on functions from anon;
