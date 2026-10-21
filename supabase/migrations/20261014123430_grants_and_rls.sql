@@ -84,6 +84,8 @@ as $$
 $$;
 
 -- Can I see this client? Used by the tables that hang off clients.
+-- Coordinators see all clients in their organisation; other staff only their assigned clients.
+-- (The creator is assigned automatically, so there's no separate creator rule.)
 create function public.can_see_client(p_client_id uuid)
 returns boolean
 language sql stable security definer set search_path = ''
@@ -92,21 +94,18 @@ as $$
     select 1 from public.clients c
     where c.client_id = p_client_id
       and c.organisation_id = public.my_organisation_id()
-      and (public.is_coordinator()
-           or c.created_by = auth.uid()
-           or public.is_assigned_to(c.client_id))
+      and (public.is_coordinator() or public.is_assigned_to(c.client_id))
   );
 $$;
 
--- Seeing clients: same organisation, AND coordinator, creator or assigned
+-- Seeing clients: same organisation, AND coordinator or assigned.
+-- Unassigning a worker removes their access, even if they created the client.
 create policy "Staff see permitted clients"
 on public.clients for select
 to authenticated
 using (
   organisation_id = public.my_organisation_id()
-  and (public.is_coordinator()
-       or created_by = auth.uid()
-       or public.is_assigned_to(client_id))
+  and (public.is_coordinator() or public.is_assigned_to(client_id))
 );
 
 -- Creating clients: only in your own organisation, and recorded as created by you
@@ -118,15 +117,13 @@ with check (
   and created_by = auth.uid()
 );
 
--- Editing clients: anyone who can see the client, and it can't move to another organisation
+-- Editing clients: coordinators, or staff assigned to the client. It can't move to another organisation.
 create policy "Staff edit permitted clients"
 on public.clients for update
 to authenticated
 using (
   organisation_id = public.my_organisation_id()
-  and (public.is_coordinator()
-       or created_by = auth.uid()
-       or public.is_assigned_to(client_id))
+  and (public.is_coordinator() or public.is_assigned_to(client_id))
 )
 with check (organisation_id = public.my_organisation_id());
 
