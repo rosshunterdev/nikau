@@ -146,14 +146,17 @@ create trigger clients_assign_creator
   after insert on public.clients
   for each row execute function public.assign_client_creator();
 
--- created_by can't change after the client is created.
--- RLS can't compare old and new values, so a trigger does it.
+-- created_by can't be changed by a person.
+-- One exception: when a staff member is deleted, Postgres itself sets created_by
+-- to NULL (the foreign key's ON DELETE SET NULL). That runs inside its own trigger,
+-- so pg_trigger_depth() is above 1. Only that case is allowed, and only to NULL.
 create function public.keep_client_creator()
 returns trigger
 language plpgsql set search_path = ''
 as $$
 begin
-  if new.created_by is distinct from old.created_by then
+  if new.created_by is distinct from old.created_by
+     and not (new.created_by is null and pg_trigger_depth() > 1) then
     raise exception 'created_by cannot be changed' using errcode = '42501';
   end if;
   return new;
