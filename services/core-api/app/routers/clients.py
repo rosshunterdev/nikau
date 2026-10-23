@@ -1,7 +1,8 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, status
 from postgrest.exceptions import APIError
+from postgrest.types import ReturnMethod
 
 from app.deps import Caller, CurrentCaller
 from app.schemas.clients import ClientCreate, ClientDetail, ClientSummary, ClientUpdate
@@ -110,9 +111,15 @@ def create_client(body: ClientCreate, caller: CurrentCaller):
     row["organisation_id"] = my_organisation_id(caller)
     row["created_by"] = caller.user_id
 
+    # The API makes the new client's id itself, so we don't need the row handed back.
+    # (A worker can't see the new row until the trigger assigns them, so no "returning".)
+    client_id = str(uuid4())
+    row["client_id"] = client_id
+
     try:
-        res = caller.db.table("clients").insert(row).execute()
-        client_id = res.data[0]["client_id"]
+        caller.db.table("clients").insert(
+            row, returning=ReturnMethod.minimal
+        ).execute()
 
         # 2. Interests (tag_ids is already a set, so no duplicates)
         tags = [{"client_id": client_id, "tag_id": t} for t in tag_ids]
