@@ -97,7 +97,9 @@ nikau/
 
 ### Prerequisites
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running)
-- Supabase CLI. On Windows: `scoop bucket add supabase https://github.com/supabase/scoop-bucket.git` then `scoop install supabase`
+- Supabase CLI **2.121.0 or newer** (check with `supabase --version`). Older versions can't read `supabase/config.toml`.
+  - Install on Windows: `scoop bucket add supabase https://github.com/supabase/scoop-bucket.git` then `scoop install supabase`
+  - Update: `scoop update supabase`
 
 ### Commands (run from the repo root)
 ```bash 
