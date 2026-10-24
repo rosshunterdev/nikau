@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import SignIn from './pages/SignIn'
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import ClientList from './pages/ClientList'
 import ClientForm from './pages/ClientForm'
+import AppLayout from './components/AppLayout'
 
 type Profile = {
   user_id: string
   first_name: string
+  last_name: string
   role: 'support_worker' | 'coordinator'
   is_active: boolean
 }
@@ -36,7 +38,7 @@ export default function App() {
     if (!session) return // nothing to load; an old profile is ignored below
     supabase
       .from('profiles')
-      .select('user_id, first_name, role, is_active')
+      .select('user_id, first_name, last_name, role, is_active')
       .eq('user_id', session.user.id)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -61,28 +63,28 @@ export default function App() {
   if (!session) return <SignIn notice={notice} />
   if (!currentProfile) return <p>Loading…</p>
 
-    // Signed in: a simple header, then whichever page matches the address
+      // Signed in: the sidebar layout, with whichever page matches the address inside it
   return (
     <BrowserRouter>
-      <header style={{ display: 'flex', gap: 16, alignItems: 'center', padding: 16 }}>
-        <strong>Nīkau</strong>
-        <Link to="/clients">Clients</Link>
-        <span style={{ marginLeft: 'auto' }}>
-          {currentProfile.first_name} ·{' '}
-          {currentProfile.role === 'coordinator' ? 'Coordinator' : 'Support worker'}
-        </span>
-        <button onClick={() => supabase.auth.signOut()}>Sign out</button>
-      </header>
-
-      <main style={{ padding: 16 }}>
-        <Routes>
+      <Routes>
+        <Route
+          element={
+            <AppLayout
+              name={`${currentProfile.first_name} ${currentProfile.last_name}`}
+              role={currentProfile.role}
+              onSignOut={() => supabase.auth.signOut()}
+            />
+          }
+        >
           <Route path="/" element={<Navigate to="/clients" replace />} />
           <Route path="/clients" element={<ClientList />} />
           <Route path="/clients/new" element={<ClientForm />} />
           <Route path="/clients/:id" element={<ClientForm />} />
+          <Route path="/activities" element={<p>Activity catalogue is coming soon.</p>} />
+          <Route path="/leads" element={<p>Saved leads are coming soon.</p>} />
           <Route path="*" element={<p>Page not found.</p>} />
-        </Routes>
-      </main>
+        </Route>
+      </Routes>
     </BrowserRouter>
   )
 }
