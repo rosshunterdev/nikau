@@ -159,7 +159,10 @@ create table public.activities (
   created_by             uuid references public.profiles (user_id) on delete set null,
   created_at             timestamptz not null default now(),
   updated_by             uuid references public.profiles (user_id) on delete set null,
-  updated_at             timestamptz not null default now(),
+  updated_at               timestamptz not null default now(),
+  -- Set when an activity leaves the catalogue (null = active).
+  -- Archive instead of delete: saved leads still point to it.
+  archived_at              timestamptz,
   -- When both ages are given, the minimum can't be above the maximum
   constraint age_range_valid check (min_age is null or max_age is null or min_age <= max_age)
 );
