@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.enums import ClientTransport, Day, Level, Slot, SupportNeeded
 
@@ -44,15 +44,16 @@ class ClientDetail(BaseModel):
 
 
 class ClientCreate(BaseModel):
-    """What the 'Add a client' form sends. Only the name is required."""
+    """What the 'Add a client' form sends.
+    Name, support needed and both levels are required (matches the form)."""
 
     preferred_name: str = Field(min_length=1, max_length=100)
     suburb_id: UUID | None = None
     birth_year: int | None = Field(default=None, ge=1900, le=2100)
-    support_needed: SupportNeeded | None = None
-    max_physical_demand: Level | None = None
+    support_needed: SupportNeeded
+    max_physical_demand: Level
     needs_step_free: bool | None = None
-    max_sensory_load: Level | None = None
+    max_sensory_load: Level
     sensory_hard_limit: bool = False
     transport: list[ClientTransport] = []
     max_cost: float | None = Field(default=None, ge=0)
@@ -62,7 +63,8 @@ class ClientCreate(BaseModel):
 
 class ClientUpdate(BaseModel):
     """Edit a client. Only the fields you send are changed.
-    Sending interests or availability replaces the whole list."""
+    Sending interests or availability replaces the whole list.
+    Required fields can be left out, but not cleared with null."""
 
     preferred_name: str | None = Field(None, min_length=1, max_length=100)
     suburb_id: UUID | None = None
@@ -76,3 +78,12 @@ class ClientUpdate(BaseModel):
     max_cost: float | None = Field(None, ge=0)
     interests: list[UUID] | None = None
     availability: list[AvailabilitySlot] | None = None
+
+    @field_validator(
+        "preferred_name", "support_needed", "max_physical_demand", "max_sensory_load"
+    )
+    @classmethod
+    def cannot_be_cleared(cls, value):
+        if value is None:
+            raise ValueError("is required and can't be cleared")
+        return value
