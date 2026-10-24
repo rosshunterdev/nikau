@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.14" # @ROSS - which Python version the Vercel projects use. CI should test on the version the live service runs on.
+          python-version: "3.14"
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: python -m pytest
