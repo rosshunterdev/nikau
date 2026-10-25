@@ -82,6 +82,14 @@ export default function App() {
           <Route path="/clients/:id" element={<ClientForm />} />
           <Route path="/activities" element={<p>Activity catalogue is coming soon.</p>} />
           <Route path="/leads" element={<p>Saved leads are coming soon.</p>} />
+          <Route
+            path="/matching-log"
+            element={
+              currentProfile.role === 'coordinator'
+                ? <p>Matching log is coming soon.</p>
+                : <p>Page not found.</p>
+            }
+          />
           <Route path="*" element={<p>Page not found.</p>} />
         </Route>
       </Routes>

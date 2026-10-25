@@ -12,6 +12,23 @@
   min-height: 100vh;
 }
 
+/* NEW ---- Skip link: hidden above the page until it gets keyboard focus ---- */
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: -100px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--navy);
+  color: #fff;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 16px;
+}
+
 /* ---- Sidebar ---- */
 .sidebar {
   width: 250px;
@@ -116,7 +133,8 @@
 /* Clear keyboard focus, important for accessibility */
 .sidebar-link:focus-visible,
 .sidebar-logo:focus-visible,
-.sidebar-signout:focus-visible {
+.sidebar-signout:focus-visible,
+.skip-link:focus-visible {
   outline: 3px solid var(--navy);
   outline-offset: 2px;
 }
@@ -128,7 +146,12 @@
   padding: 40px;
 }
 
-/* ---- Mobile: logo and Sign out on top, menu fixed to the bottom ---- */
+/* NEW: main gets focus from the skip link; no outline needed on the whole page */
+.app-main:focus {
+  outline: none;
+}
+
+/* ---- Mobile: logo, user and Sign out on top, menu fixed to the bottom ---- */
 @media (max-width: 768px) {
   .app {
     flex-direction: column;
@@ -141,6 +164,7 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     padding: 12px 16px;
     border-right: none;
     border-bottom: 1px solid var(--border);
@@ -151,12 +175,34 @@
     margin: 0;
   }
 
+  /* NEW: name and role sit beside Sign out on one row */
   .sidebar-footer {
     margin: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
   }
 
-  .sidebar-user {
+  /* NEW: no avatar on mobile, to save space */
+  .sidebar-avatar {
     display: none;
+  }
+
+  /* NEW: right-align the name and role next to the button */
+  .sidebar-user {
+    text-align: right;
+  }
+
+  .sidebar-name {
+    font-size: 14px;
+  }
+
+  .sidebar-role {
+    font-size: 12px;
+  }
+
+  .sidebar-signout {
+    padding: 8px 12px;
   }
 
   /* The bottom bar */
