@@ -1,0 +1,72 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-0000000000c1",
+    "birth_year": 2001,
+    "suburb": "Miramar",
+    "travel_range_minutes": 30,
+    "goals": [
+      "improve physical exercise",
+      "start in a social club"
+    ],
+    "interests": [
+      "Sport and fitness"
+    ],
+    "participation_notes": "can lose attention and engagement after long periods",
+    "max_physical_demand": "medium",
+    "physical_notes": "Enjoys going on runs",
+    "needs_step_free": true,
+    "max_sensory_load": "medium",
+    "sensory_notes": "struggles with overcrowded areas",
+    "sensory_hard_limit": true,
+    "transport": [
+      "bus_train_with_worker"
+    ],
+    "support_needed": "worker_present",
+    "max_cost": 20,
+    "availability": [
+      {
+        "day": "tue",
+        "slot": "morning"
+      },
+      {
+        "day": "thu",
+        "slot": "afternoon"
+      }
+    ]
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000c2",
+    "birth_year": 2001,
+    "suburb": "Miramar",
+    "travel_range_minutes": 30,
+    "goals": [
+      "improve physical exercise",
+      "start in a social club"
+    ],
+    "interests": [
+      "Sport and fitness"
+    ],
+    "participation_notes": "can lose attention and engagement after long periods",
+    "max_physical_demand": "medium",
+    "physical_notes": "Enjoys going on runs",
+    "needs_step_free": true,
+    "max_sensory_load": "medium",
+    "sensory_notes": "struggles with overcrowded areas",
+    "sensory_hard_limit": false,
+    "transport": [
+      "bus_train_with_worker"
+    ],
+    "support_needed": "worker_present",
+    "max_cost": 20,
+    "availability": [
+      {
+        "day": "tue",
+        "slot": "morning"
+      },
+      {
+        "day": "thu",
+        "slot": "afternoon"
+      }
+    ]
+  }
+]

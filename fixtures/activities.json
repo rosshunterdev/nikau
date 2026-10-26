@@ -1,0 +1,542 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-0000000000f1",
+    "name": "Pickleball",
+    "consent_given": true,
+    "description": "Has many Pickleball tables, takes in social groups of people",
+    "tags": [
+      "Sport and fitness"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "10:00",
+        "end": "12:00"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 7,
+    "min_age": 16,
+    "max_age": null,
+    "physical_demand": "high",
+    "physical_notes": "Lots of quick movements",
+    "step_free_access": true,
+    "sensory_load": "medium",
+    "sensory_notes": "Indoors, big sports arena",
+    "group_size": "10_to_20",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "bring_own_support",
+    "staff_experience": null,
+    "not_in_listing": "Whether coaches have worked with disabled players"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a0",
+    "name": "Community art class",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a1",
+    "name": "Art class, no consent",
+    "consent_given": false,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a2",
+    "name": "Art class, high physical",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "high",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a3",
+    "name": "Art class, loud room",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "high",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a4",
+    "name": "Art class, stairs only",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": false,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a5",
+    "name": "Art class, $25",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 25,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a6",
+    "name": "Art class, Monday",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "mon",
+        "start": "10:00",
+        "end": "11:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a7",
+    "name": "Art class, 60 plus",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 60,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a8",
+    "name": "Art class, no bus",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "mobility_parking"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a9",
+    "name": "Art class, no support workers",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "not_allowed",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000b1",
+    "name": "Art class, access unknown",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": null,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000b2",
+    "name": "Art class, $20",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 20,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000b3",
+    "name": "Art class, noon start",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "12:00",
+        "end": "13:00"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": 18,
+    "max_age": null,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000b4",
+    "name": "Art class, up to 24",
+    "consent_given": true,
+    "description": "Relaxed beginner painting class in a small group",
+    "tags": [
+      "Art and craft"
+    ],
+    "suburb": "Kilbirnie",
+    "sessions": [
+      {
+        "day": "thu",
+        "start": "13:00",
+        "end": "14:30"
+      }
+    ],
+    "joining": "drop_in",
+    "cost_per_session": 10,
+    "min_age": null,
+    "max_age": 24,
+    "physical_demand": "low",
+    "physical_notes": "Seated or standing at an easel",
+    "step_free_access": true,
+    "sensory_load": "low",
+    "sensory_notes": "Quiet room, background music",
+    "group_size": "under_10",
+    "transport_options": [
+      "bus_route"
+    ],
+    "bus_routes": "2",
+    "walk_from_stop_minutes": 5,
+    "support_worker_policy": "attend_free",
+    "staff_support": "staff_can_assist",
+    "staff_experience": true,
+    "not_in_listing": "Whether materials are included"
+  }
+]
