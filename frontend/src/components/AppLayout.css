@@ -5,6 +5,8 @@
   --border: #d0d5dd;
   --muted: #5f6b7a;
   --avatar-bg: #e4e7ec;
+  --peach: #fde2d8;
+  --card-border: #98a2b3;
 }
 
 .app {
@@ -149,6 +151,62 @@
 /* NEW: main gets focus from the skip link; no outline needed on the whole page */
 .app-main:focus {
   outline: none;
+}
+
+/* ---- Page titles: te reo first, English underneath ---- */
+.page-title {
+  margin: 0;
+  font-size: 36px;
+  line-height: 1.1;
+  color: var(--navy);
+}
+
+.page-title-en {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ---- Buttons (also used for links that look like buttons) ---- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button-outline {
+  background: #fff;
+  color: var(--navy);
+  border: 1px solid var(--navy);
+}
+
+.button-outline:hover {
+  background: var(--teal-tint);
+}
+
+.button-soft {
+  background: var(--peach);
+  color: var(--navy);
+  border: 1px solid transparent;
+}
+
+.button-soft:hover {
+  border-color: var(--navy);
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
 }
 
 /* ---- Mobile: logo, user and Sign out on top, menu fixed to the bottom ---- */
