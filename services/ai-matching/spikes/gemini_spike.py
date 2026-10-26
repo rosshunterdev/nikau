@@ -6,6 +6,36 @@ import json
 import uuid
 from pathlib import Path
 
+from pydantic import BaseModel, Field
+
+# --- Step 2: response models (contract v0.3 "Response 200" and "Result") ---
+
+class Result(BaseModel):
+    """One ranked lead. Field names copied exactly from the contract."""
+    # str, not UUID: an invented ID shouldn't break the whole parse.
+    # Step 5 drops off-shortlist IDs and counts them in dropped_count.
+    activity_id: str = Field(description="Must be an id from the shortlist")
+    rank: int = Field(description="1, 2, 3... with no gaps or repeats")
+    why_fits: list[str] = Field(
+        description="1-3 lines: how it matches the client's goals, interests or needs, using only the fields sent")
+    why_doesnt_cover: list[str] = Field(
+        description="0-3 lines: needs it doesn't meet, incl. sensory load above the client's level and any support worker charge")
+    why_ask: list[str] = Field(
+        description="0-3 lines: unknowns (null fields) to check with the provider")
+
+
+class ModelOutput(BaseModel):
+    """What Gemini returns. Only the part the model can know."""
+    results: list[Result]
+
+
+class MatchResponse(BaseModel):
+    """What POST /match returns. Built by our code, not by the model."""
+    request_id: str
+    results: list[Result]
+    model_ms: int        # we time the Gemini call
+    dropped_count: int   # we count removed results in step 5
+
 # Where am I? This file is in services/ai-matching/spikes/
 # parents[3] = SD205-Nikau (checked 26 Oct: prints the repo root)
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -106,3 +136,12 @@ if __name__ == "__main__":
     assert "birth_year" not in request["client"] and "id" not in request["client"]
 
     print(json.dumps(request, indent=2))
+
+        # Step 2 self-test: good result passes, missing field fails
+    good = {"results": [{"activity_id": "x", "rank": 1, "why_fits": ["a"],
+                         "why_doesnt_cover": [], "why_ask": []}]}
+    print("good:", ModelOutput.model_validate(good))
+    try:
+        ModelOutput.model_validate({"results": [{"activity_id": "x", "rank": 1}]})
+    except Exception as e:
+        print("bad rejected OK:", type(e).__name__)
