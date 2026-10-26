@@ -33,19 +33,26 @@ export default function App() {
     return () => subscription.unsubscribe() // tidy up when the app closes
   }, [])
 
-  // 2. When there's a session, load the person's profile to get their role
+  // 2. When someone signs in, load their profile to get their role.
+  // Depends on the user id, not the session: token refreshes and tab refocus
+  // give a new session object for the same person, and shouldn't refetch.
+  const userId = session?.user.id
+
   useEffect(() => {
-    if (!session) return // nothing to load; an old profile is ignored below
+    if (!userId) return // nothing to load; an old profile is ignored below
     supabase
       .from('profiles')
       .select('user_id, first_name, last_name, role, is_active')
-      .eq('user_id', session.user.id)
+      .eq('user_id', userId)
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) {
           setNotice("Can't load your account. Please try again.")
           supabase.auth.signOut()
-        } else if (!data || !data.is_active) {
+        } else if (!data) {
+          setNotice('No profile found for this account. Contact your admin.')
+          supabase.auth.signOut()
+        } else if (!data.is_active) {
           setNotice('Your account is inactive. Contact your admin.')
           supabase.auth.signOut()
         } else {
@@ -53,7 +60,7 @@ export default function App() {
           setProfile(data as Profile)
         }
       })
-  }, [session])
+  }, [userId])
 
   // Only use the profile if it belongs to whoever is signed in right now
   const currentProfile =
