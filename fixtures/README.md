@@ -41,6 +41,6 @@ For `c2`, `a3` is kept, with the sensory mismatch flagged under "Doesn't cover".
 ## Notes for the pre-filter and spike
 
 - **Time slots** are set by session start time: morning = before 12:00, afternoon = 12:00 to 16:59, evening = 17:00 or later.
-- **Unknown or empty values never exclude** an activity. It's kept, and the AI lists it under "ask about".
+- **Unknown or empty values never exclude** an activity. It's kept, and the AI turns it into a `why_ask` line.
 - **Travel range is a signal, not a filter.** No travel times between suburbs are stored, so it's left to the AI and the worker.
 - **Interests:** client 1 has an interest that matches the kept activities; client 2 doesn't. Client 2 is the negative case: the AI must not claim an interest fit for it.
