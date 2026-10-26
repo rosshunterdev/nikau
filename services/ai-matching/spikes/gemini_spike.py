@@ -3,11 +3,16 @@
 Step 1: build a POST /match request from the B2 fixtures.
 Step 2: Pydantic models for the model output and the /match response.
 Step 3: system instruction (rules) and message (data) for Gemini.
+Step 4: call Gemini with structured output, time it, read response.parsed.
 """
 import json
+import time
 import uuid
 from pathlib import Path
 
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 from pydantic import BaseModel, Field
 
 
@@ -163,6 +168,38 @@ def build_message(request):
     return "Client and shortlist (JSON):\n" + json.dumps(data, indent=2)
 
 
+# --- Step 4: call Gemini ---
+
+MODEL = "gemini-3.1-flash-lite"   # from the 24 Oct plan; if you get a 404, check the exact model id
+TIMEOUT_MS = 15_000               # contract D4: Core API stops waiting after 15 s
+
+
+def make_gemini():
+    """Gemini client. Reads GEMINI_API_KEY from .env (never committed)."""
+    load_dotenv(REPO_ROOT / ".env")
+    # Named "gemini", not "client": "client" already means the person.
+    return genai.Client(http_options=types.HttpOptions(timeout=TIMEOUT_MS))
+
+
+def call_gemini(gemini, request):
+    """One structured-output call. Returns (parsed or None, raw text, model_ms)."""
+    config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_INSTRUCTION,
+        response_mime_type="application/json",   # answer must be JSON...
+        response_schema=ModelOutput,             # ...in exactly this shape
+    )
+    start = time.perf_counter()                  # time ONLY the call (contract: model_ms)
+    response = gemini.models.generate_content(
+        model=MODEL,
+        contents=build_message(request),
+        config=config,
+    )
+    model_ms = round((time.perf_counter() - start) * 1000)
+    # parsed is a ModelOutput if the JSON fit the schema, otherwise None.
+    # Keep the raw text so a failure can be inspected (and quoted in the write-up).
+    return response.parsed, response.text, model_ms
+
+
 # --- Run: calls the steps in order and prints the checks ---
 
 if __name__ == "__main__":
@@ -193,3 +230,19 @@ if __name__ == "__main__":
         ModelOutput.model_validate({"results": [{"activity_id": "x", "rank": 1}]})
     except Exception as e:
         print("bad rejected OK:", type(e).__name__)
+
+    # Step 4: one real call (fixtures only, never real client data)
+    print("\n--- Step 4: calling", MODEL, "---")
+    gemini = make_gemini()
+    parsed, raw, model_ms = call_gemini(gemini, request)
+    print(f"model_ms: {model_ms}  (D4 limit: {TIMEOUT_MS})")
+    if parsed is None:
+        print("PARSE FAILED. Raw reply:")
+        print(raw)
+    else:
+        print(f"parsed OK: {len(parsed.results)} results")
+        for r in parsed.results:
+            print(f"\n#{r.rank}  {r.activity_id}")
+            print("  fits:   ", r.why_fits)
+            print("  doesn't:", r.why_doesnt_cover)
+            print("  ask:    ", r.why_ask)
