@@ -49,5 +49,44 @@ insert into public.client_assignments (client_id, user_id, assigned_by) values
 insert into public.providers (provider_id, name, consent_given, consent_date) values
   ('d0000000-0000-0000-0000-000000000001', 'Wellington Community Arts', true, '2026-10-01');
 
-insert into public.activities (provider_id, name, physical_demand, cost_per_session) values
-  ('d0000000-0000-0000-0000-000000000001', 'Pottery for beginners', 'low', 15.00);
+insert into public.activities (activity_id, provider_id, name, physical_demand, sensory_load, cost_per_session)
+values
+  ('e0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001',
+   'Pottery for beginners', 'low', 'low', 15.00);
+
+-- Tags: the activity is Art and craft, and Sam is interested in Art and craft.
+-- Tag ids are random (made in the reference data migration), so look them up by name.
+insert into public.activity_tags (activity_id, tag_id)
+select 'e0000000-0000-0000-0000-000000000001', tag_id
+from public.tags where name = 'Art and craft';
+
+insert into public.client_interests (client_id, tag_id)
+select 'c0000000-0000-0000-0000-000000000001', tag_id
+from public.tags where name = 'Art and craft';
+
+-- When the activity runs: Thursday afternoon
+insert into public.activity_sessions (session_id, activity_id, day, start_time, end_time) values
+  ('f0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000001',
+   'thu', '13:00', '14:30');
+
+-- One AI matching request by Will. Performance and outcome only, no client details.
+-- Comes before the lead, because the lead points to it.
+insert into public.matching_log (
+  request_id, called_as, response_ms, result, organisation_id, requested_by,
+  candidate_count, leads_shown, model_ms, dropped_count
+) values
+  ('90000000-0000-0000-0000-000000000001', 'http', 1840, 'success',
+   'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000002',
+   1, 1, 1500, 0);
+
+-- Will saved the pottery class as a lead for Sam, keeping the AI's explanation
+insert into public.leads (
+  lead_id, client_id, activity_id, saved_by, source,
+  why_fits, why_doesnt_cover, why_ask, match_request_id
+) values
+  ('80000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001',
+   'e0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000002', 'ai_match',
+   'Sam enjoys art and craft, and the class is low on physical demand and noise.',
+   'The listing does not say whether the room is step-free.',
+   'Ask whether clay and tools are included in the $15.',
+   '90000000-0000-0000-0000-000000000001');
