@@ -1,0 +1,71 @@
+.signin {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #ffffff;
+  --primary: #092c4c;        /* Color - Primary */
+  --action: #0f6e74;         /* Sign in button teal: copy from Figma */
+  --text-secondary: #4b5563;
+  --placeholder: #6b7280;
+  --border: #767676;         /* color/border: copy from Figma */
+  --error: #b42318;
+}
+.signin-card {
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  color: var(--primary);
+  text-align: left;
+}
+.signin-brand { font-size: 32px; font-weight: 700; margin: 0 0 16px; }
+.signin-card h1 { font-size: 24px; margin: 0 0 4px; }
+.signin-sub { margin: 0 0 24px; }
+.signin-card label { font-weight: 600; margin: 16px 0 6px; }
+.signin-card input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+}
+.signin-card input::placeholder { color: var(--placeholder); }
+.signin-password { position: relative; }
+.signin-password input { padding-right: 48px; }
+.signin-eye {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.signin-error { color: var(--error); margin: 16px 0 0; }
+.signin-submit {
+  margin-top: 24px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--action);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.signin-submit:disabled { opacity: 0.7; cursor: wait; }
+.signin-help {
+  margin: 24px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
