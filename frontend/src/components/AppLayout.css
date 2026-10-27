@@ -1,0 +1,308 @@
+:root {
+  --navy: #0f2c4c;
+  --teal: #0a6e75;
+  --teal-tint: #eaf4f5;
+  --border: #d0d5dd;
+  --muted: #5f6b7a;
+  --avatar-bg: #e4e7ec;
+  --peach: #fde2d8;
+  --card-border: #98a2b3;
+}
+
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* NEW ---- Skip link: hidden above the page until it gets keyboard focus ---- */
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: -100px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--navy);
+  color: #fff;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 16px;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: #fff;
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-logo {
+  font-size: 44px;
+  font-weight: 700;
+  color: var(--navy);
+  text-decoration: none;
+  margin-bottom: 28px;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  color: var(--navy);
+  font-size: 17px;
+  text-decoration: none;
+}
+
+.sidebar-link:hover {
+  background: var(--teal-tint);
+}
+
+.sidebar-link.active {
+  background: var(--teal);
+  color: #fff;
+}
+
+/* ---- Bottom: user and sign out ---- */
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--avatar-bg);
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.sidebar-name {
+  display: block;
+  font-weight: 600;
+}
+
+.sidebar-role {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.sidebar-signout {
+  padding: 10px;
+  font: inherit;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sidebar-signout:hover {
+  background: var(--teal-tint);
+}
+
+/* Clear keyboard focus, important for accessibility */
+.sidebar-link:focus-visible,
+.sidebar-logo:focus-visible,
+.sidebar-signout:focus-visible,
+.skip-link:focus-visible {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
+}
+
+/* ---- Page content ---- */
+.app-main {
+  flex: 1;
+  min-width: 0;
+  padding: 40px;
+}
+
+/* NEW: main gets focus from the skip link; no outline needed on the whole page */
+.app-main:focus {
+  outline: none;
+}
+
+/* ---- Page titles: te reo first, English underneath ---- */
+.page-title {
+  margin: 0;
+  font-size: 36px;
+  line-height: 1.1;
+  color: var(--navy);
+}
+
+.page-title-en {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ---- Buttons (also used for links that look like buttons) ---- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button-outline {
+  background: #fff;
+  color: var(--navy);
+  border: 1px solid var(--navy);
+}
+
+.button-outline:hover {
+  background: var(--teal-tint);
+}
+
+.button-soft {
+  background: var(--peach);
+  color: var(--navy);
+  border: 1px solid transparent;
+}
+
+.button-soft:hover {
+  border-color: var(--navy);
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
+}
+
+/* ---- Mobile: logo, user and Sign out on top, menu fixed to the bottom ---- */
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: auto;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo {
+    font-size: 28px;
+    margin: 0;
+  }
+
+  /* NEW: name and role sit beside Sign out on one row */
+  .sidebar-footer {
+    margin: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* NEW: no avatar on mobile, to save space */
+  .sidebar-avatar {
+    display: none;
+  }
+
+  /* NEW: right-align the name and role next to the button */
+  .sidebar-user {
+    text-align: right;
+  }
+
+  .sidebar-name {
+    font-size: 14px;
+  }
+
+  .sidebar-role {
+    font-size: 12px;
+  }
+
+  .sidebar-signout {
+    padding: 8px 12px;
+  }
+
+  /* The bottom bar */
+  .sidebar-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .sidebar-nav ul {
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 4px;
+  }
+
+  .sidebar-nav li {
+    flex: 1;
+  }
+
+  .sidebar-link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-height: 56px;
+    padding: 6px 4px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .sidebar-link.active {
+    background: var(--teal-tint);
+    color: var(--teal);
+    font-weight: 600;
+  }
+
+  /* Leave room so the last bit of a page isn't hidden behind the bar */
+  .app-main {
+    padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  }
+}

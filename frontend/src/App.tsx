@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import SignIn from './pages/SignIn'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
+import ClientList from './pages/ClientList'
+import ClientForm from './pages/ClientForm'
+import AppLayout from './components/AppLayout'
 
 type Profile = {
   user_id: string
   first_name: string
+  last_name: string
   role: 'support_worker' | 'coordinator'
   is_active: boolean
 }
@@ -28,19 +33,26 @@ export default function App() {
     return () => subscription.unsubscribe() // tidy up when the app closes
   }, [])
 
-  // 2. When there's a session, load the person's profile to get their role
+  // 2. When someone signs in, load their profile to get their role.
+  // Depends on the user id, not the session: token refreshes and tab refocus
+  // give a new session object for the same person, and shouldn't refetch.
+  const userId = session?.user.id
+
   useEffect(() => {
-    if (!session) return // nothing to load; an old profile is ignored below
+    if (!userId) return // nothing to load; an old profile is ignored below
     supabase
       .from('profiles')
-      .select('user_id, first_name, role, is_active')
-      .eq('user_id', session.user.id)
+      .select('user_id, first_name, last_name, role, is_active')
+      .eq('user_id', userId)
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) {
           setNotice("Can't load your account. Please try again.")
           supabase.auth.signOut()
-        } else if (!data || !data.is_active) {
+        } else if (!data) {
+          setNotice('No profile found for this account. Contact your admin.')
+          supabase.auth.signOut()
+        } else if (!data.is_active) {
           setNotice('Your account is inactive. Contact your admin.')
           supabase.auth.signOut()
         } else {
@@ -48,7 +60,7 @@ export default function App() {
           setProfile(data as Profile)
         }
       })
-  }, [session])
+  }, [userId])
 
   // Only use the profile if it belongs to whoever is signed in right now
   const currentProfile =
@@ -58,12 +70,36 @@ export default function App() {
   if (!session) return <SignIn notice={notice} />
   if (!currentProfile) return <p>Loading…</p>
 
-  // Placeholder home screen until the real screens are built
+      // Signed in: the sidebar layout, with whichever page matches the address inside it
   return (
-    <main style={{ padding: 24 }}>
-      <h1>Kia ora, {currentProfile.first_name}</h1>
-      <p>Signed in as {currentProfile.role === 'coordinator' ? 'Coordinator' : 'Support worker'}</p>
-      <button onClick={() => supabase.auth.signOut()}>Sign out</button>
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route
+          element={
+            <AppLayout
+              name={`${currentProfile.first_name} ${currentProfile.last_name}`}
+              role={currentProfile.role}
+              onSignOut={() => supabase.auth.signOut()}
+            />
+          }
+        >
+          <Route path="/" element={<Navigate to="/clients" replace />} />
+          <Route path="/clients" element={<ClientList />} />
+          <Route path="/clients/new" element={<ClientForm />} />
+          <Route path="/clients/:id" element={<ClientForm />} />
+          <Route path="/activities" element={<p>Activity catalogue is coming soon.</p>} />
+          <Route path="/leads" element={<p>Saved leads are coming soon.</p>} />
+          <Route
+            path="/matching-log"
+            element={
+              currentProfile.role === 'coordinator'
+                ? <p>Matching log is coming soon.</p>
+                : <p>Page not found.</p>
+            }
+          />
+          <Route path="*" element={<p>Page not found.</p>} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }
