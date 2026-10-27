@@ -1,0 +1,41 @@
+batch,run,client,prompt,parsed,returned,kept,dropped,model_ms,not_returned,error
+20261027-1347,1,c1,v1,False,,,,,,"ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'Deadline expired before operation could complete.', 'status': 'DEADLINE_EXCEEDED'}}"
+20261027-1347,2,c1,v1,True,4,4,0,7392,b4,
+20261027-1347,3,c1,v1,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1347,4,c1,v1,False,,,,,,"ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'Deadline expired before operation could complete.', 'status': 'DEADLINE_EXCEEDED'}}"
+20261027-1347,5,c1,v1,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1347,6,c1,v1,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1347,7,c1,v1,True,4,4,0,3629,b4,
+20261027-1347,8,c1,v1,False,,,,,,"ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'Deadline expired before operation could complete.', 'status': 'DEADLINE_EXCEEDED'}}"
+20261027-1347,9,c1,v1,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1347,10,c1,v1,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1349,1,c2,v1,True,5,5,0,12001,b4,
+20261027-1349,2,c2,v1,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1349,3,c2,v1,True,5,5,0,4004,b4,
+20261027-1349,4,c2,v1,True,5,5,0,8725,b4,
+20261027-1349,5,c2,v1,True,5,5,0,3382,b4,
+20261027-1349,6,c2,v1,True,5,5,0,3271,b4,
+20261027-1349,7,c2,v1,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1349,8,c2,v1,False,,,,,,"ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'Deadline expired before operation could complete.', 'status': 'DEADLINE_EXCEEDED'}}"
+20261027-1349,9,c2,v1,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1349,10,c2,v1,True,5,5,0,10579,b4,
+20261027-1351,1,c1,v2,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1351,2,c1,v2,True,5,5,0,3552,,
+20261027-1351,3,c1,v2,False,,,,,,"ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'Deadline expired before operation could complete.', 'status': 'DEADLINE_EXCEEDED'}}"
+20261027-1351,4,c1,v2,True,5,5,0,13922,,
+20261027-1351,5,c1,v2,True,5,5,0,3868,,
+20261027-1351,6,c1,v2,True,5,5,0,3585,,
+20261027-1351,7,c1,v2,True,5,5,0,3418,,
+20261027-1351,8,c1,v2,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1351,9,c1,v2,True,5,5,0,11310,,
+20261027-1351,10,c1,v2,False,,,,,,"ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'Deadline expired before operation could complete.', 'status': 'DEADLINE_EXCEEDED'}}"
+20261027-1353,1,c2,v2,True,5,5,0,4007,a3,
+20261027-1353,2,c2,v2,False,,,,,,"ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'Deadline expired before operation could complete.', 'status': 'DEADLINE_EXCEEDED'}}"
+20261027-1353,3,c2,v2,True,5,5,0,5150,a3,
+20261027-1353,4,c2,v2,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1353,5,c2,v2,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1353,6,c2,v2,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1353,7,c2,v2,False,,,,,,"ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'Deadline expired before operation could complete.', 'status': 'DEADLINE_EXCEEDED'}}"
+20261027-1353,8,c2,v2,False,,,,,,"ServerError: 504 DEADLINE_EXCEEDED. {'error': {'code': 504, 'message': 'Deadline expired before operation could complete.', 'status': 'DEADLINE_EXCEEDED'}}"
+20261027-1353,9,c2,v2,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
+20261027-1353,10,c2,v2,False,,,,,,"ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAIL"
