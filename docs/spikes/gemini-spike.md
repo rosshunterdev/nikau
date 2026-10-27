@@ -1,6 +1,6 @@
 # Spike SCRUM-63: can Gemini Flash-Lite return valid, grounded leads?
 
-**Status:** draft, 27 Oct 2026 · **Owner:** Ross · **Branch:** `SCRUM-63-gemini-spike`
+**Status:** complete, 28 Oct 2026 · **Owner:** Ross · **Branch:** `SCRUM-63-gemini-spike`
 **Code:** `services/ai-matching/spikes/gemini_spike.py` (request, prompt, checks), `run_batch.py` (repeat runs)
 **Data:** `docs/spikes/runs/summary.csv` (one row per run), `batch-*.jsonl` (raw replies)
 
@@ -88,7 +88,7 @@ Free-tier limits for this model (AI Studio, 28 Oct 2026): **15 RPM, 250K TPM, 50
 ## Follow-ups
 
 - [ ] Comparison: 10 runs on a stable (non-preview) Flash-Lite model, and 3.1 again at a different time of day
-- [ ] Fill in Q5 limits from AI Studio
+- [x] Fill in Q5 limits from AI Studio
 - [ ] SCRUM-75: move the allow-lists, models and `check_results` into `ai_matching/contract.py` and `service.py`; add `google-genai` to `requirements.txt`; mock Gemini in tests
 - [ ] Contract v0.4 with Jove: should a result removed for having no `why_fits` count in `dropped_count`? May the AI say "nothing here fits well" instead of always returning at least one result?
 - [ ] SCRUM-60: varied seed activities for a real ranking test
