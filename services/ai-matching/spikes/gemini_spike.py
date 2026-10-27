@@ -208,6 +208,61 @@ def call_gemini(gemini, request):
 
 # --- Run: calls the steps in order and prints the checks ---
 
+# --- Step 5: our checks (contract v0.3 "Rules AI Matching guarantees") ---
+
+MAX_LINES = 3   # contract: each why_* list has at most 3 lines
+
+
+def check_results(output, request):
+    """Apply contract rules 1-4 and 6 to the model's output.
+
+    Returns (kept, dropped_count). Raises ValueError("invalid_output: ...")
+    if nothing valid is left (rule 6).
+    """
+    valid_ids = {a["id"] for a in request["shortlist"]}   # set: fast "is it on the shortlist?"
+    seen = set()       # ids already kept, to catch duplicates
+    kept = []
+    dropped = 0        # contract: counts off-shortlist and duplicates only
+
+    # Sort by the model's rank first, in case it didn't send them in order.
+    for r in sorted(output.results, key=lambda r: r.rank):
+        if r.activity_id not in valid_ids:      # rule 1: invented or off-shortlist id
+            dropped += 1
+            continue
+        if r.activity_id in seen:               # rule 2: duplicate
+            dropped += 1
+            continue
+        if not r.why_fits:                      # rule 4: needs at least one reason
+            continue                            # removed, not counted (contract's definition)
+        seen.add(r.activity_id)
+        kept.append(r)
+
+    kept = kept[:request["limit"]]              # rule 3: never more than limit
+
+    if not kept:                                # rule 6: an error, never an empty list
+        raise ValueError("invalid_output: no valid results after checks")
+
+    # Renumber ranks 1, 2, 3... with no gaps, and trim each why_* list to 3 lines.
+    final = []
+    for i, r in enumerate(kept, start=1):
+        final.append(r.model_copy(update={
+            "rank": i,
+            "why_fits": r.why_fits[:MAX_LINES],
+            "why_doesnt_cover": r.why_doesnt_cover[:MAX_LINES],
+            "why_ask": r.why_ask[:MAX_LINES],
+        }))
+    return final, dropped
+
+
+def build_match_response(request, kept, model_ms, dropped_count):
+    """The POST /match response body. Built by our code, not by the model."""
+    return MatchResponse(
+        request_id=request["request_id"],
+        results=kept,
+        model_ms=model_ms,
+        dropped_count=dropped_count,
+    )
+
 if __name__ == "__main__":
     clients = load("clients.json")
     activities = load("activities.json")
@@ -239,6 +294,54 @@ if __name__ == "__main__":
     except Exception as e:
         print("bad rejected OK:", type(e).__name__)
 
+
+    # --- Step 5b: hand-made messy model output, to test our checks without calling Gemini ---
+
+    def full_id(short):
+        """Full shortlist id for a short code like "a0" (spike helper)."""
+        for a in request["shortlist"]:
+            if a["id"].endswith(short):
+                return a["id"]
+        raise KeyError(f"{short} is not on this client's shortlist")
+
+    messy = ModelOutput.model_validate({"results": [
+        # 1. kept
+        {"activity_id": full_id("a0"), "rank": 1, "why_fits": ["ok"], "why_doesnt_cover": [], "why_ask": []},
+        # 2. invented id, not on the shortlist: dropped, counted
+        {"activity_id": "made-up-id", "rank": 2, "why_fits": ["ok"], "why_doesnt_cover": [], "why_ask": []},
+        # 3. a0 again: duplicate, dropped, counted
+        {"activity_id": full_id("a0"), "rank": 3, "why_fits": ["ok"], "why_doesnt_cover": [], "why_ask": []},
+        # 4. no why_fits (breaks contract rule 4): removed
+        {"activity_id": full_id("b1"), "rank": 5, "why_fits": [], "why_doesnt_cover": [], "why_ask": []},
+        # 5. kept; rank 6 has a gap before it, so it gets renumbered
+        {"activity_id": full_id("b2"), "rank": 6, "why_fits": ["ok"], "why_doesnt_cover": [], "why_ask": []},
+    ]})
+
+    # Expected from check_results(messy, request):
+    #   kept, in order:  a0 (rank 1), b2 (rank 2)
+    #   dropped_count:   2  (made-up-id + duplicate a0)
+    #   b1 is removed but NOT counted: the contract defines dropped_count as
+    #   off-shortlist or duplicate only. Raise with Jove for contract v0.4.
+
+    all_bad = ModelOutput.model_validate({"results": [
+        {"activity_id": "made-up-id", "rank": 1, "why_fits": ["ok"], "why_doesnt_cover": [], "why_ask": []},
+        {"activity_id": full_id("a0"), "rank": 2, "why_fits": [], "why_doesnt_cover": [], "why_ask": []},
+    ]})
+    # Expected: nothing valid left, so check_results raises (contract rule 6: invalid_output)
+
+    print(f"messy built: {len(messy.results)} results; all_bad built: {len(all_bad.results)} results")
+
+    kept, dropped = check_results(messy, request)
+    assert [r.activity_id[-2:] for r in kept] == ["a0", "b2"], kept
+    assert [r.rank for r in kept] == [1, 2], kept
+    assert dropped == 2, dropped
+    try:
+        check_results(all_bad, request)
+        print("FAIL: all_bad should have raised")
+    except ValueError as e:
+        print("all_bad rejected OK:", e)
+    print("step 5 self-test passed")
+
     # Step 4: one real call (fixtures only, never real client data)
     print("\n--- Step 4: calling", MODEL, "---")
     gemini = make_gemini()
@@ -248,9 +351,16 @@ if __name__ == "__main__":
         print("PARSE FAILED. Raw reply:")
         print(raw)
     else:
-        print(f"parsed OK: {len(parsed.results)} results")
-        for r in parsed.results:
-            print(f"\n#{r.rank}  {r.activity_id}")
-            print("  fits:   ", r.why_fits)
-            print("  doesn't:", r.why_doesnt_cover)
-            print("  ask:    ", r.why_ask)
+        print(f"parsed OK: {len(parsed.results)} results from the model")
+        try:
+            kept, dropped = check_results(parsed, request)
+        except ValueError as e:
+            print("CHECKS FAILED:", e)
+        else:
+            response = build_match_response(request, kept, model_ms, dropped)
+            print(f"after checks: kept {len(response.results)}, dropped_count {response.dropped_count}")
+            for r in response.results:
+                print(f"\n#{r.rank}  {r.activity_id}")
+                print("  fits:   ", r.why_fits)
+                print("  doesn't:", r.why_doesnt_cover)
+                print("  ask:    ", r.why_ask)
