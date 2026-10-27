@@ -24,7 +24,14 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = REPO_ROOT / "fixtures"
 
 THIS_YEAR = 2026
-SHORTLIST_IDS = ["a0", "b1", "b2", "b3", "b4"]   # what the pre-filter keeps for c1 (spike only; real shortlist comes from SCRUM-66)
+
+
+# What the pre-filter keeps for each client (fixtures/README.md, "Expected results").
+# Spike only: the real shortlist comes from SCRUM-66.
+SHORTLISTS = {
+    "c1": ["a0", "b1", "b2", "b3", "b4"],
+    "c2": ["a0", "a3", "b1", "b2", "b3", "b4"],
+}
 
 # Privacy boundary: ALLOW-LIST of "To AI" fields.
 # Only these fields leave the Core API. Anything not named here is withheld,
@@ -89,12 +96,11 @@ def to_ai_activity(activity):
     return {field: activity.get(field) for field in TO_AI_ACTIVITY_FIELDS}
 
 
-def build_request(client, activities):
-    # Only the activities whose id ends with one of SHORTLIST_IDS,
-    # converted with to_ai_activity.
+def build_request(client, activities, keep_ids):
+    # Keep only this client's shortlisted activities (keep_ids), converted with to_ai_activity
     shortlist = []
     for a in activities:
-        if a["id"][-2:] in SHORTLIST_IDS:
+        if a["id"][-2:] in keep_ids:
             shortlist.append(to_ai_activity(a))
     return {
         "request_id": str(uuid.uuid4()),
@@ -205,8 +211,10 @@ def call_gemini(gemini, request):
 if __name__ == "__main__":
     clients = load("clients.json")
     activities = load("activities.json")
-    raw_client = clients[0]   # c1 (Sport and fitness only until PR #12 adds Art and craft)
-    request = build_request(raw_client, activities)
+    raw_client = clients[0]              # clients[0] = c1, clients[1] = c2
+    client_key = raw_client["id"][-2:]   # last 2 characters of the id: "c1" or "c2"
+    request = build_request(raw_client, activities, SHORTLISTS[client_key])
+    print("client:", client_key)
 
     # Step 1 check, privacy boundary: what did we NOT send?
     # If something the AI needs shows up here, check the contract before adding it.
