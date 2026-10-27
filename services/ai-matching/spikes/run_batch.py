@@ -40,6 +40,7 @@ def run_batch(gemini, request, client_key, prompt_version, runs):
             parsed, raw, model_ms = None, None, ""
             returned = kept_n = dropped = not_returned = ""
             error = ""
+            start = time.perf_counter()   # also time failed calls: does a retry fit in 15 s?
             try:
                 parsed, raw, model_ms = call_gemini(gemini, request, PROMPTS[prompt_version])
                 if parsed is None:
@@ -55,7 +56,8 @@ def run_batch(gemini, request, client_key, prompt_version, runs):
             except ValueError as e:          # check_results: invalid_output
                 error = str(e)
             except Exception as e:           # rate limit (429), timeout, network
-                error = f"{type(e).__name__}: {e}"[:200]
+                failed_ms = round((time.perf_counter() - start) * 1000)
+                error = f"after {failed_ms} ms: {type(e).__name__}: {e}"[:200]
 
             rf.write(json.dumps({"run": run, "model_ms": model_ms,
                                  "error": error, "raw": raw}) + "\n")
