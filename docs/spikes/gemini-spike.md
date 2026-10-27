@@ -65,7 +65,11 @@ Median 4.0 s (mean 6.4 s) for successful calls, but 4 of 16 took 10.6–13.9 s, 
 ### Q5: free tier
 
 No 429 (rate-limit) errors, so quota wasn't the problem at this volume. The failures were capacity: 503 "This model is currently experiencing high demand". Other developers reported the same for 3.1 Flash-Lite at the time ([Google AI forum](https://discuss.ai.google.dev/t/gemini-3-1-flash-lite-frequent-503s-and-high-latency-recently/138414)).
-Free-tier limits for this model (from AI Studio): **TODO: RPM ___, RPD ___**.
+
+Free-tier limits for this model (AI Studio, 28 Oct 2026): **15 RPM, 250K TPM, 500 RPD**. Peak spike usage over the last 28 days was 7 RPM, about 15.9K TPM and 48 RPD, well inside all three. AI Studio's error chart for 27 Oct shows the same 503 and 504 counts as our logs, which confirms the failures were Google's capacity and our timeout, not quota.
+
+- **Development and demo:** enough. A request is about 2.3K tokens, so RPM, not TPM, is the limit that would bind.
+- **RQ1:** 15 RPM caps any load test at 15 matches a minute on the free tier. Above that we'd be measuring Google's quota, not our architecture, so RQ1 should mock Gemini or use a paid tier.
 
 ## Decision
 
