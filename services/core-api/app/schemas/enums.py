@@ -9,3 +9,5 @@ ClientTransport = Literal[
 ]
 Day = Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 Slot = Literal["morning", "afternoon", "evening"]
+ActivityTransport = Literal["bus_route", "mobility_parking", "door_drop_off"]
+SupportWorkerPolicy = Literal["attend_free", "attend_with_charge", "not_allowed"]
