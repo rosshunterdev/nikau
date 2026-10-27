@@ -6,6 +6,10 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import ClientList from './pages/ClientList'
 import ClientForm from './pages/ClientForm'
 import AppLayout from './components/AppLayout'
+import ProviderList from './pages/ProviderList'
+import ProviderForm from './pages/ProviderForm'
+import ActivityList from './pages/ActivityList'
+import ActivityForm from './pages/ActivityForm'
 
 type Profile = {
   user_id: string
@@ -87,7 +91,9 @@ export default function App() {
           <Route path="/clients" element={<ClientList />} />
           <Route path="/clients/new" element={<ClientForm />} />
           <Route path="/clients/:id" element={<ClientForm />} />
-          <Route path="/activities" element={<p>Activity catalogue is coming soon.</p>} />
+          <Route path="/activities" element={<ActivityList />} />
+          <Route path="/activities/new" element={<ActivityForm />} />
+          <Route path="/activities/:id" element={<ActivityForm />} />
           <Route path="/leads" element={<p>Saved leads are coming soon.</p>} />
           <Route
             path="/matching-log"
@@ -97,8 +103,26 @@ export default function App() {
                 : <p>Page not found.</p>
             }
           />
+          <Route
+            path="/providers"
+            element={
+              currentProfile.role === 'coordinator' ? <ProviderList /> : <p>Page not found.</p>
+            } 
+          />
           <Route path="*" element={<p>Page not found.</p>} />
-        </Route>
+          <Route
+            path="/providers/new"
+            element={
+              currentProfile.role === 'coordinator' ? <ProviderForm /> : <p>Page not found.</p>
+            }
+          />
+          <Route
+            path="/providers/:id"
+            element={
+              currentProfile.role === 'coordinator' ? <ProviderForm /> : <p>Page not found.</p>
+            }
+          />
+        </Route>        
       </Routes>
     </BrowserRouter>
   )

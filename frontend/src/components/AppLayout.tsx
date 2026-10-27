@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from "react-router";
 import type { LucideIcon } from "lucide-react";
-import { Users, SquareActivity, Bookmark, ScrollText } from "lucide-react";
+import { Users, SquareActivity, Building2, Bookmark, ScrollText } from "lucide-react";
 import "./AppLayout.css";
 
 type Role = "support_worker" | "coordinator";
@@ -21,6 +21,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { to: "/clients", label: "Clients", icon: Users },
   { to: "/activities", label: "Activity catalogue", icon: SquareActivity }, // page: SCRUM-65
+  { to: "/providers", label: "Providers", icon: Building2, roles: ["coordinator"] },
   { to: "/leads", label: "Saved leads", icon: Bookmark },
   { to: "/matching-log", label: "Matching log", icon: ScrollText, roles: ["coordinator"] },
 ];
@@ -83,7 +84,7 @@ export default function AppLayout({ name, role, onSignOut }: Props) {
       </aside>
 
       <main id="main-content" className="app-main" tabIndex={-1}>
-        <Outlet />
+        <Outlet context={{ role }} />
       </main>
     </div>
   );

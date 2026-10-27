@@ -34,3 +34,15 @@ export const SLOTS = [
   { value: 'afternoon', label: 'Afternoon' },
   { value: 'evening', label: 'Evening' },
 ]
+
+export const ACTIVITY_TRANSPORT = [
+  { value: 'bus_route', label: 'On a bus route' },
+  { value: 'mobility_parking', label: 'Mobility parking' },
+  { value: 'door_drop_off', label: 'Door drop-off' },
+]
+
+export const SUPPORT_WORKER_POLICY = [
+  { value: 'attend_free', label: 'Worker attends free' },
+  { value: 'attend_with_charge', label: 'Worker pays to attend' },
+  { value: 'not_allowed', label: 'Workers not allowed' },
+]
