@@ -4,7 +4,7 @@ from datetime import date, datetime, time
 from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.enums import ActivityTransport, Day, Level, SupportWorkerPolicy
 
@@ -102,3 +102,10 @@ class ActivityUpdate(BaseModel):
     checked_at: date | None = None
     tags: list[UUID] | None = None
     sessions: list[ActivitySession] | None = None
+
+    @field_validator("provider_id", "name")
+    @classmethod
+    def cannot_be_cleared(cls, value):
+        if value is None:
+            raise ValueError("is required and can't be cleared")
+        return value

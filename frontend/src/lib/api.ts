@@ -36,7 +36,14 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     if (typeof body?.detail === 'string') {
       message = body.detail
     } else if (Array.isArray(body?.detail) && body.detail[0]?.msg) {
-      message = body.detail[0].msg.replace(/^Value error, /, '')
+      const first = body.detail[0]
+      const text = first.msg.replace(/^Value error, /, '')
+      // loc is like ["body", "min_age"]: name the field if there is one
+      const field = first.loc?.at(-1)
+      message =
+        typeof field === 'string' && field !== 'body'
+          ? `${field.replace(/_/g, ' ')}: ${text}`
+          : text
     }
 
     throw new ApiError(res.status, message)

@@ -4,6 +4,7 @@ import { api, ApiError } from '../lib/api'
 import { ACTIVITY_TRANSPORT, DAYS, LEVELS, SUPPORT_WORKER_POLICY } from '../lib/options'
 import type { ActivityDetail, Day, Provider, Suburb, Tag } from '../lib/types'
 import { useRole } from '../lib/useRole'
+import { todayLocal } from '../lib/dates'
 
 type SessionRow = { day: Day; start_time: string; end_time: string }
 
@@ -217,7 +218,7 @@ function ActivityForm({ id }: { id?: string }) {
           <summary>About</summary>
 
           <label>
-            Name (required)
+            Name{canEdit && ' (required)'}
             <input
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
@@ -227,7 +228,7 @@ function ActivityForm({ id }: { id?: string }) {
           </label>
 
           <label>
-            Provider (required)
+            Provider{canEdit && ' (required)'}
             <select
               value={form.provider_id}
               onChange={(e) => set('provider_id', e.target.value)}
@@ -458,10 +459,10 @@ function ActivityForm({ id }: { id?: string }) {
               type="date"
               value={form.checked_at}
               onChange={(e) => set('checked_at', e.target.value)}
-              max={new Date().toISOString().slice(0, 10)}
+              max={todayLocal()}
             />
           </label>
-          <p>Setting a new date records you as the person who checked.</p>
+          {canEdit && <p>Setting a new date records you as the person who checked.</p>}
         </details>
       </fieldset>
 

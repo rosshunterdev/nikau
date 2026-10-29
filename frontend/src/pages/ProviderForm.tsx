@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { api, ApiError } from '../lib/api'
 import type { Provider } from '../lib/types'
+import { todayLocal } from '../lib/dates'
 
 // What the form holds while you type. Empty boxes are '' until saving.
 type FormState = {
@@ -167,7 +168,7 @@ function ProviderForm({ id }: { id?: string }) {
               type="date"
               value={form.consent_date}
               onChange={(e) => set('consent_date', e.target.value)}
-              max={new Date().toISOString().slice(0, 10)}
+              max={todayLocal()}
               required
             />
           </label>

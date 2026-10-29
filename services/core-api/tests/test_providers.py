@@ -50,3 +50,7 @@ def test_consent_with_a_date_passes():
 
 def test_update_with_only_some_fields_passes():
     ProviderUpdate(website="https://example.nz")
+
+def test_update_cannot_clear_the_name():
+    with pytest.raises(ValidationError):
+        ProviderUpdate(name=None)

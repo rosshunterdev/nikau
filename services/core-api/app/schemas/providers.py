@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from typing import Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class Provider(BaseModel):
@@ -46,3 +46,11 @@ class ProviderUpdate(BaseModel):
     website: str | None = Field(default=None, max_length=500)
     consent_given: bool | None = None
     consent_date: date | None = None
+
+    @field_validator("name")
+    @classmethod
+    def cannot_be_cleared(cls, value):
+        """Can be left out, but not cleared with null (required in the database)."""
+        if value is None:
+            raise ValueError("is required and can't be cleared")
+        return value

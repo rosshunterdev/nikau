@@ -74,7 +74,7 @@ export default function App() {
   if (!session) return <SignIn notice={notice} />
   if (!currentProfile) return <p>Loading…</p>
 
-      // Signed in: the sidebar layout, with whichever page matches the address inside it
+  // Signed in: the sidebar layout, with whichever page matches the address inside it
   return (
     <BrowserRouter>
       <Routes>
@@ -96,20 +96,11 @@ export default function App() {
           <Route path="/activities/:id" element={<ActivityForm />} />
           <Route path="/leads" element={<p>Saved leads are coming soon.</p>} />
           <Route
-            path="/matching-log"
-            element={
-              currentProfile.role === 'coordinator'
-                ? <p>Matching log is coming soon.</p>
-                : <p>Page not found.</p>
-            }
-          />
-          <Route
             path="/providers"
             element={
               currentProfile.role === 'coordinator' ? <ProviderList /> : <p>Page not found.</p>
-            } 
+            }
           />
-          <Route path="*" element={<p>Page not found.</p>} />
           <Route
             path="/providers/new"
             element={
@@ -122,7 +113,17 @@ export default function App() {
               currentProfile.role === 'coordinator' ? <ProviderForm /> : <p>Page not found.</p>
             }
           />
-        </Route>        
+          <Route
+            path="/matching-log"
+            element={
+              currentProfile.role === 'coordinator'
+                ? <p>Matching log is coming soon.</p>
+                : <p>Page not found.</p>
+            }
+          />
+          {/* Anything else: keep last */}
+          <Route path="*" element={<p>Page not found.</p>} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

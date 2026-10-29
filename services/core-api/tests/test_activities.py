@@ -69,3 +69,7 @@ def test_unknown_day_fails():
 
 def test_update_with_only_some_fields_passes():
     ActivityUpdate(cost_per_session=0)
+
+def test_update_cannot_clear_the_name():
+    with pytest.raises(ValidationError):
+        ActivityUpdate(name=None)
