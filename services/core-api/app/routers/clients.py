@@ -1,8 +1,7 @@
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 from postgrest.exceptions import APIError
-from postgrest.types import ReturnMethod
 
 from app.deps import Caller, CurrentCaller
 from app.schemas.clients import ClientCreate, ClientDetail, ClientSummary, ClientUpdate
@@ -61,21 +60,6 @@ def get_client(client_id: UUID, caller: CurrentCaller):
     return to_detail(row)
 
 
-def my_organisation_id(caller: Caller) -> str:
-    """The signed-in person's organisation, from their profile."""
-
-    res = (
-        caller.db.table("profiles")
-        .select("organisation_id")
-        .eq("user_id", caller.user_id)
-        .maybe_single()
-        .execute()
-    )
-    if not res or not res.data:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Account inactive")
-    return res.data["organisation_id"]
-
-
 def check_tags_exist(caller: Caller, tag_ids: set[str]) -> None:
     """400 if any interest tag id isn't real. Run this BEFORE saving anything."""
     if not tag_ids:
@@ -87,120 +71,67 @@ def check_tags_exist(caller: Caller, tag_ids: set[str]) -> None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown interest tag")
 
 
+# Postgres error codes from the save functions, turned into clear responses
+NOT_FOUND = "P0002"  # the client doesn't exist, or you can't see it
+NOT_ALLOWED = "42501"  # you can see it but can't edit it (RLS)
+BAD_LINK = "23503"  # a suburb or interest tag that doesn't exist
+
+
+def save_error(e: APIError) -> HTTPException:
+    """Turn a database error into a clear message for the form."""
+    if e.code == NOT_FOUND:
+        return HTTPException(status.HTTP_404_NOT_FOUND, "Client not found")
+    if e.code == NOT_ALLOWED:
+        return HTTPException(status.HTTP_403_FORBIDDEN, "You can't edit this client")
+    if e.code == BAD_LINK:
+        return HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Check the suburb and interests"
+        )
+    return HTTPException(status.HTTP_400_BAD_REQUEST, "Could not save client")
+
+
 @router.post(
     "/clients", response_model=ClientDetail, status_code=status.HTTP_201_CREATED
 )
 def create_client(body: ClientCreate, caller: CurrentCaller):
-    """Add a client. Organisation and creator come from your sign-in, not the form."""
-
-    # 0. Check tags BEFORE saving anything (no half-saved clients)
-    tag_ids = {str(t) for t in body.interests}
-    check_tags_exist(caller, tag_ids)
-    if tag_ids:
-        found = (
-            caller.db.table("tags")
-            .select("tag_id")
-            .in_("tag_id", list(tag_ids))
-            .execute()
-        )
-        if len(found.data) != len(tag_ids):
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown interest tag")
-
-    # 1. The client row (interests and availability live in their own tables)
-    row = body.model_dump(mode="json", exclude={"interests", "availability"})
-    row["organisation_id"] = my_organisation_id(caller)
-    row["created_by"] = caller.user_id
-
-    # The API makes the new client's id itself, so we don't need the row handed back.
-    # (A worker can't see the new row until the trigger assigns them, so no "returning".)
-    client_id = str(uuid4())
-    row["client_id"] = client_id
+    """Add a client with its interests and availability, all or nothing (SCRUM-78).
+    The database sets the organisation and creator from your sign-in."""
+    data = body.model_dump(mode="json")
+    interests = data.pop("interests")
+    availability = data.pop("availability")
 
     try:
-        caller.db.table("clients").insert(
-            row, returning=ReturnMethod.minimal
+        res = caller.db.rpc(
+            "create_client_full",
+            {"p_client": data, "p_interests": interests, "p_availability": availability},
         ).execute()
-
-        # 2. Interests (tag_ids is already a set, so no duplicates)
-        tags = [{"client_id": client_id, "tag_id": t} for t in tag_ids]
-        if tags:
-            caller.db.table("client_interests").insert(tags).execute()
-
-        # 3. Availability (duplicates dropped the same way)
-        times = {(a.day, a.slot) for a in body.availability}
-        slots = [{"client_id": client_id, "day": d, "slot": s} for d, s in times]
-        if slots:
-            caller.db.table("client_availability").insert(slots).execute()
-
-    except APIError:
-        # e.g. a suburb id that doesn't exist
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "Could not save client. Check the suburb and interests.",
-        )
+    except APIError as e:
+        raise save_error(e)
 
     # Send back the saved client, in the same shape as GET /clients/{id}
-    return get_client(UUID(client_id), caller)
+    return get_client(UUID(res.data), caller)
 
 
 @router.patch("/clients/{client_id}", response_model=ClientDetail)
 def update_client(client_id: UUID, body: ClientUpdate, caller: CurrentCaller):
-    """Edit a client. Only the fields you send change. 404 if you can't see it."""
-
-    # 0. Must be a client you can see (get_client raises 404 if not)
-    get_client(client_id, caller)
-
-    # Only the fields actually sent (exclude_unset skips the ones left out)
-    changes = body.model_dump(
-        mode="json", exclude_unset=True, exclude={"interests", "availability"}
-    )
-
-    # Check tags BEFORE saving anything
-    tag_ids = None
-    if body.interests is not None:
-        tag_ids = {str(t) for t in body.interests}
-        check_tags_exist(caller, tag_ids)
+    """Edit a client, all or nothing (SCRUM-78). Only the fields you send change.
+    Sending interests or availability replaces the whole list."""
+    # Only the fields actually sent; interests and availability go separately
+    data = body.model_dump(mode="json", exclude_unset=True)
+    interests = data.pop("interests", None)  # None = not sent, leave them alone
+    availability = data.pop("availability", None)
 
     try:
-        # 1. The client row, only if any of its fields were sent
-        if changes:
-            res = (
-                caller.db.table("clients")
-                .update(changes)
-                .eq("client_id", str(client_id))
-                .execute()
-            )
-            if not res.data:  # RLS let you see it, but not edit it
-                raise HTTPException(
-                    status.HTTP_403_FORBIDDEN, "You can't edit this client"
-                )
+        caller.db.rpc(
+            "update_client_full",
+            {
+                "p_client_id": str(client_id),
+                "p_changes": data,
+                "p_interests": interests,
+                "p_availability": availability,
+            },
+        ).execute()
+    except APIError as e:
+        raise save_error(e)
 
-        # 2. Interests: if sent, replace the whole list
-        if tag_ids is not None:
-            caller.db.table("client_interests").delete().eq(
-                "client_id", str(client_id)
-            ).execute()
-            tags = [{"client_id": str(client_id), "tag_id": t} for t in tag_ids]
-            if tags:
-                caller.db.table("client_interests").insert(tags).execute()
-
-        # 3. Availability: if sent, replace the whole list
-        if body.availability is not None:
-            caller.db.table("client_availability").delete().eq(
-                "client_id", str(client_id)
-            ).execute()
-            times = {(a.day, a.slot) for a in body.availability}
-            slots = [
-                {"client_id": str(client_id), "day": d, "slot": s} for d, s in times
-            ]
-            if slots:
-                caller.db.table("client_availability").insert(slots).execute()
-
-    except APIError:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "Could not save client. Check the suburb and interests.",
-        )
-
-    # Send back the updated client
     return get_client(client_id, caller)
