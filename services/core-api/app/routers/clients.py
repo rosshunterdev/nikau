@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 from postgrest.exceptions import APIError
 
-from app.deps import Caller, CurrentCaller
+from app.deps import CurrentCaller
 from app.schemas.clients import ClientCreate, ClientDetail, ClientSummary, ClientUpdate
 
 router = APIRouter(tags=["clients"])
@@ -59,23 +59,10 @@ def get_client(client_id: UUID, caller: CurrentCaller):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Client not found")
     return to_detail(row)
 
-
-def check_tags_exist(caller: Caller, tag_ids: set[str]) -> None:
-    """400 if any interest tag id isn't real. Run this BEFORE saving anything."""
-    if not tag_ids:
-        return
-    found = (
-        caller.db.table("tags").select("tag_id").in_("tag_id", list(tag_ids)).execute()
-    )
-    if len(found.data) != len(tag_ids):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown interest tag")
-
-
 # Postgres error codes from the save functions, turned into clear responses
 NOT_FOUND = "P0002"  # the client doesn't exist, or you can't see it
 NOT_ALLOWED = "42501"  # you can see it but can't edit it (RLS)
 BAD_LINK = "23503"  # a suburb or interest tag that doesn't exist
-
 
 def save_error(e: APIError) -> HTTPException:
     """Turn a database error into a clear message for the form."""
