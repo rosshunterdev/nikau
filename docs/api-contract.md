@@ -1,6 +1,6 @@
 # Core API ↔ AI Matching contract
 
-**Ticket:** SCRUM-58 (B1) · **Version:** 0.3, 20 Oct 2026 · **Owner:** Ross · **Reviewer:** Jove
+**Ticket:** SCRUM-58 (B1), v0.4 changes in SCRUM-75 · **Version:** 0.4, 31 Oct 2026 · **Owner:** Ross · **Reviewer:** Jove
 
 This is the request and response between the Core API and the AI Matching service. Both sides build and test against it independently. Field names follow *SCRUM-50 Client and activity attributes v0.3* (with `birth_year` in place of `age_band`, as approved in the ERD).
 
@@ -11,10 +11,13 @@ Agreed with Jove in the PR #5 review.
 | # | Decision | Proposed |
 |---|---|---|
 | D1 | Service auth | Shared secret in `Authorization: Bearer <MATCHING_SERVICE_KEY>`, stored as a Vercel environment variable on both services |
-| D2 | Shortlist maximum, and which activities to keep when the pre-filter returns more | 30. If the pre-filter returns more, the Core API keeps the top 30 by: (1) most interest tags shared with the client, (2) same suburb as the client, (3) lower `cost_per_session`, with activities that have no cost listed going last, (4) `id`, so the cut is repeatable. In SQL: `order by shared_tags desc, (a.suburb_id = client_suburb_id) desc, a.cost_per_session asc nulls last, a.activity_id limit 30` || D3 | Result limit | Default 5, maximum 10 |
+| D2 | Shortlist maximum, and which activities to keep when the pre-filter returns more | 30. If the pre-filter returns more, the Core API keeps the top 30 by: (1) most interest tags shared with the client, (2) same suburb as the client, (3) lower `cost_per_session`, with activities that have no cost listed going last, (4) `id`, so the cut is repeatable. In SQL: `order by shared_tags desc, (a.suburb_id = client_suburb_id) desc, a.cost_per_session asc nulls last, a.activity_id limit 30` |
+| D3 | Result limit | Default 5, maximum 10 |
 | D4 | Timeout on the Core API side | 15 s |
 | D5 | Enum codes | Resolved: matches SCRUM-50 v0.3 and the SCRUM-61 enums migration |
 | D6 | `why_*` storage | Lists of strings here; if the `leads` columns are `text`, the Core API joins them with newlines | Agreed: leads.why_* are text, so the Core API joins with newlines
+| D7 | "Nothing fits well" (v0.4) | AI Matching may return 0 results when none of the shortlist is a reasonable fit, instead of always returning at least one. The Core API logs it as `no_good_fit` and the frontend points the worker to the catalogue. Agreed with Jove in the PR #16 review |
+| D8 | `dropped_count` (v0.4) | Also counts results removed for having no `why_fits`, so it measures output quality. Agreed in the PR #16 review |
 
 ## How a match runs
 
@@ -22,12 +25,14 @@ Agreed with Jove in the PR #5 review.
 2. The Core API runs the nine v0.3 filter rules in plain code to build the shortlist. If more than 30 activities pass, it keeps 30 using the D2 selection rule.
 3. If the shortlist is empty, the Core API logs `no_candidates` and does **not** call AI Matching.
 4. The Core API sends the client's "To AI" fields and the shortlist to `POST /match`.
-5. AI Matching ranks the shortlist and explains each result, removes any activity that isn't on the shortlist, and returns at most `limit` results.
-6. The Core API logs the call in `matching_log` and returns the results to the frontend. On any failure it returns the fallback instead (see Errors).
+5. AI Matching ranks the shortlist and explains each result, removes any activity that isn't on the shortlist, and returns at most `limit` results. If nothing on the shortlist is a reasonable fit, it returns no results (D7).
+6. The Core API logs the call in `matching_log` and returns the results to the frontend. On an empty result it logs `no_good_fit`; on any failure it returns the fallback instead (see Errors).
 
 ## Privacy boundary
 
 Only the fields listed under Request leave the Core API.
+
+AI Matching enforces this too: the request models reject any field not in the tables below with `422 invalid_request`, so a leaked field (for example `birth_year`) never reaches Gemini. The Core API builds requests with the shared allow-lists in `ai_matching.contract` (`to_ai_client`, `to_ai_activity`).
 
 **Never sent:** client name or `preferred_name`, client ID, `birth_year`, contact details, street addresses (client or activity), staff names, organisation, provider name and contact details, consent fields, `sensory_hard_limit`, `last_reviewed_with_client`, `contributors`, `check_method`, `checked_at`, `checked_by`.
 
@@ -106,9 +111,9 @@ Every field except `age_band` may be `null` or empty, meaning "no limit" or "not
 | Field | Type | Rules |
 |---|---|---|
 | `request_id` | uuid | Same as the request |
-| `results` | Result[] | 1 to `limit` items, ordered by `rank` |
+| `results` | Result[] | 0 to `limit` items, ordered by `rank`. Empty means nothing on the shortlist fits well (D7) |
 | `model_ms` | integer | Time spent waiting for Gemini, in ms |
-| `dropped_count` | integer | Activities the model returned that weren't on the shortlist (or were duplicates), removed before responding |
+| `dropped_count` | integer | Results the model returned that were removed before responding: not on the shortlist, duplicates, or no `why_fits` (D8) |
 
 #### Result
 
@@ -120,16 +125,16 @@ Every field except `age_band` may be `null` or empty, meaning "no limit" or "not
 | `why_doesnt_cover` | string[] | 0–3 items; needs it doesn't meet, including a sensory load above the client's level and any support worker charge |
 | `why_ask` | string[] | 0–3 items; unknowns to check with the provider |
 
-The Core API works out `candidate_count` (shortlist length) and `leads_shown` (results length) itself.
+The Core API works out `candidate_count` (shortlist length) and `leads_shown` (results length, 0 for `no_good_fit`) itself.
 
 ### Rules AI Matching guarantees
 
 1. Every `activity_id` is on the shortlist. Anything else is removed and counted in `dropped_count`.
-2. No activity appears twice.
+2. No activity appears twice. Duplicates are removed and counted.
 3. `results` never has more than `limit` items, or more items than the shortlist.
-4. Every result has at least one `why_fits` line.
+4. Every result has at least one `why_fits` line. Results without one are removed and counted (D8).
 5. Explanations use only the fields sent. They don't invent facts about an activity; unknowns become `why_ask` lines.
-6. If nothing valid is left after these checks, the service returns `invalid_output` instead of an empty list.
+6. If the model returns no results, the response is `200` with an empty `results` list (D7). If the model returns results but none survive rules 1–4, the service returns `invalid_output`, so honest "nothing fits" can be told apart from bad output.
 
 ## Errors
 
@@ -146,21 +151,29 @@ Every error response has this body:
 |---|---|---|---|
 | 401 | `unauthorized` | Missing or wrong service key | `error` |
 | 422 | `invalid_request` | Request breaks the rules above | `error` |
-| 502 | `model_error` | Gemini call failed | `error` |
-| 502 | `invalid_output` | Model output failed validation after one retry, or nothing valid was left | `invalid_output` |
+| 502 | `model_error` | Gemini call failed (after one retry on a 503, if time allows) | `error` |
+| 502 | `invalid_output` | Model output failed validation after one retry, or the model returned results but none survived the checks | `invalid_output` |
 | — | — | No response within 15 s (D4); the Core API stops waiting | `timeout` |
 | — | — | Empty shortlist; AI Matching isn't called | `no_candidates` |
 
-A `200` is logged as `success`.
+A `200` with results is logged as `success`. A `200` with an empty `results` list is logged as `no_good_fit` (D7).
 
-**Fallback:** on any result other than `success`, the Core API tells the frontend matching is unavailable, and the frontend opens the catalogue search with the client's needs pre-filled. For `no_candidates`, the message says no activities passed the client's filters, rather than that matching is down.
+**Retry:** AI Matching retries once on a Gemini 503 or unparseable output, only if at least 10 s of its 13 s budget is left (Gemini rejects deadlines under 10 s). That keeps the whole call inside the Core API's 15 s (D4).
+
+**Fallback:** on any result other than `success`, the frontend opens the catalogue search with the client's needs pre-filled. The message depends on the result:
+
+| `matching_log.result` | Message |
+|---|---|
+| `no_candidates` | "No activities passed this client's filters." |
+| `no_good_fit` | "None of the shortlisted activities are a good fit. Try the catalogue." |
+| `timeout`, `error`, `invalid_output` | "Matching is unavailable right now. Try the catalogue." |
 
 ## `GET /health`
 
 No auth. Returns `200` when the service is up:
 
 ```json
-{ "status": "ok", "contract_version": "0.3" }
+{ "status": "ok", "service": "ai-matching", "contract_version": "0.4" }
 ```
 
 It doesn't call Gemini, so it shows the service is running, not that the model is reachable.
@@ -179,6 +192,7 @@ response: MatchResponse = match(request)  # request: MatchRequest
 - The HTTP endpoint and the direct call use the **same Pydantic models** (`MatchRequest`, `MatchResponse`), so both paths send and receive identical data.
 - The direct call raises `MatchError(code, message)` with the same codes as the HTTP errors.
 - The Core API logs `called_as` as `http` or `direct`.
+- The package lives in `services/ai-matching/ai_matching/` (not `app/`), so the Core API can import it: both services already have an `app` package. The Core API adds `services/ai-matching` to its import path for the direct call.
 
 ## Example
 
@@ -311,3 +325,4 @@ A made-up client and two made-up activities. No real data.
 | 0.1 | 14 Oct 2026 | First draft for review |
 | 0.2 | 16 Oct 2026 | Review changes: D2 selection rule proposed (and the Core API logs the pre-cap count); D5 reworded now that the SCRUM-61 migrations are being aligned to v0.3 |
 | 0.3 | 20 Oct 2026 | Decisions agreed in review: D2 adds no-cost-last and the SQL order; D5 resolved against the SCRUM-61 enums; D1, D3, D4, D6 confirmed. Pre-cap count removed (no column in matching_log) |
+| 0.4 | 31 Oct 2026 | Agreed in the PR #16 review. D7: `results` may be empty ("nothing fits well"), logged as new `matching_log.result` value `no_good_fit`, with three frontend messages. D8: `dropped_count` also counts results with no `why_fits`. Also documents what SCRUM-75 built: extra request fields rejected (422), retry once on 503 only with ≥10 s left, `/health` body, `ai_matching` package path |
