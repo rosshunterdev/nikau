@@ -30,8 +30,22 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   // Not 2xx: turn it into an ApiError with the API's message
   if (!res.ok) {
     const body = await res.json().catch(() => null)
-    const message =
-      typeof body?.detail === 'string' ? body.detail : 'Something went wrong'
+
+    // 400/403/404: detail is a string. 422 (Pydantic): detail is a list of problems.
+    let message = 'Something went wrong'
+    if (typeof body?.detail === 'string') {
+      message = body.detail
+    } else if (Array.isArray(body?.detail) && body.detail[0]?.msg) {
+      const first = body.detail[0]
+      const text = first.msg.replace(/^Value error, /, '')
+      // loc is like ["body", "min_age"]: name the field if there is one
+      const field = first.loc?.at(-1)
+      message =
+        typeof field === 'string' && field !== 'body'
+          ? `${field.replace(/_/g, ' ')}: ${text}`
+          : text
+    }
+
     throw new ApiError(res.status, message)
   }
 
