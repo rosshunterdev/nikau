@@ -1,15 +1,12 @@
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 from postgrest.exceptions import APIError
-from postgrest.types import ReturnMethod
 
 from app.deps import Caller, CurrentCaller
-from app.routers.clients import check_tags_exist
 from app.schemas.activities import (
     ActivityCreate,
     ActivityDetail,
-    ActivitySession,
     ActivitySummary,
     ActivityUpdate,
 )
@@ -81,6 +78,7 @@ def get_activity(activity_id: UUID, caller: CurrentCaller):
 # Postgres error codes we turn into clear messages
 NOT_ALLOWED = "42501"  # RLS blocked it
 CHECK_FAILED = "23514"  # a table rule failed, e.g. min age above max age
+NOT_FOUND = "P0002"  # the activity doesn't exist, or you can't see it
 BAD_LINK = "23503"  # a provider, suburb or tag id that doesn't exist
 
 
@@ -93,83 +91,66 @@ def require_coordinator(caller: Caller) -> None:
 
 
 def save_error(e: APIError) -> HTTPException:
-    """Turn a database error into a clear message for the form."""
+    """Turn a database error from the save functions into a clear message for the form."""
+    if e.code == NOT_FOUND:
+        return HTTPException(status.HTTP_404_NOT_FOUND, "Activity not found")
     if e.code == NOT_ALLOWED:
         return HTTPException(status.HTTP_403_FORBIDDEN, "Only coordinators can add or edit activities")
     if e.code == CHECK_FAILED:
-        return HTTPException(status.HTTP_400_BAD_REQUEST, "Minimum age can't be above the maximum age")
+        return HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Check the ages and session times"
+        )
     if e.code == BAD_LINK:
-        return HTTPException(status.HTTP_400_BAD_REQUEST, "Check the provider and suburb")
+        return HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Check the provider, suburb and interests"
+        )
     return HTTPException(status.HTTP_400_BAD_REQUEST, "Could not save activity")
-
-
-def replace_tags(caller: Caller, activity_id: str, tag_ids: set[str]) -> None:
-    caller.db.table("activity_tags").delete().eq("activity_id", activity_id).execute()
-    rows = [{"activity_id": activity_id, "tag_id": t} for t in tag_ids]
-    if rows:
-        caller.db.table("activity_tags").insert(rows).execute()
-
-
-def replace_sessions(caller: Caller, activity_id: str, sessions: list[ActivitySession]) -> None:
-    caller.db.table("activity_sessions").delete().eq("activity_id", activity_id).execute()
-    # The same day and times twice counts once
-    unique = {(s.day, s.start_time, s.end_time) for s in sessions}
-    rows = [
-        {"activity_id": activity_id, "day": d, "start_time": st.isoformat(), "end_time": et.isoformat()}
-        for d, st, et in unique
-    ]
-    if rows:
-        caller.db.table("activity_sessions").insert(rows).execute()
 
 
 @router.post(
     "/activities", response_model=ActivityDetail, status_code=status.HTTP_201_CREATED
 )
 def create_activity(body: ActivityCreate, caller: CurrentCaller):
-    """Add an activity to the shared catalogue. Coordinators only."""
+    """Add an activity with its tags and sessions, all or nothing (SCRUM-88).
+    Coordinators only. The database sets the creator from your sign-in."""
     require_coordinator(caller)
 
-    # Check tags BEFORE saving anything (no half-saved activities)
-    tag_ids = {str(t) for t in body.tags}
-    check_tags_exist(caller, tag_ids)
-
-    row = body.model_dump(mode="json", exclude={"tags", "sessions"})
-    activity_id = str(uuid4())
-    row["activity_id"] = activity_id
-    row["created_by"] = caller.user_id  # the insert policy requires it to be you
+    data = body.model_dump(mode="json")
+    tags = data.pop("tags")
+    sessions = data.pop("sessions")
 
     try:
-        caller.db.table("activities").insert(row, returning=ReturnMethod.minimal).execute()
-        replace_tags(caller, activity_id, tag_ids)
-        replace_sessions(caller, activity_id, body.sessions)
+        res = caller.db.rpc(
+            "create_activity_full",
+            {"p_activity": data, "p_tags": tags, "p_sessions": sessions},
+        ).execute()
     except APIError as e:
         raise save_error(e)
 
-    return get_activity(UUID(activity_id), caller)
+    return get_activity(UUID(res.data), caller)
 
 
 @router.patch("/activities/{activity_id}", response_model=ActivityDetail)
 def update_activity(activity_id: UUID, body: ActivityUpdate, caller: CurrentCaller):
-    """Edit an activity. Only the fields you send change. Coordinators only."""
+    """Edit an activity, all or nothing (SCRUM-88). Only the fields you send change.
+    Sending tags or sessions replaces the whole list. Coordinators only."""
     get_activity(activity_id, caller)  # 404 if you can't see it
     require_coordinator(caller)
 
-    changes = body.model_dump(mode="json", exclude_unset=True, exclude={"tags", "sessions"})
-
-    tag_ids = None
-    if body.tags is not None:
-        tag_ids = {str(t) for t in body.tags}
-        check_tags_exist(caller, tag_ids)
+    data = body.model_dump(mode="json", exclude_unset=True)
+    tags = data.pop("tags", None)  # None = not sent, leave them alone
+    sessions = data.pop("sessions", None)
 
     try:
-        if changes:
-            caller.db.table("activities").update(changes).eq(
-                "activity_id", str(activity_id)
-            ).execute()
-        if tag_ids is not None:
-            replace_tags(caller, str(activity_id), tag_ids)
-        if body.sessions is not None:
-            replace_sessions(caller, str(activity_id), body.sessions)
+        caller.db.rpc(
+            "update_activity_full",
+            {
+                "p_activity_id": str(activity_id),
+                "p_changes": data,
+                "p_tags": tags,
+                "p_sessions": sessions,
+            },
+        ).execute()
     except APIError as e:
         raise save_error(e)
 
