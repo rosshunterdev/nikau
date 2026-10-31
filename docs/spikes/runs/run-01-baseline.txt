@@ -1,0 +1,35 @@
+client fields withheld: ['birth_year', 'id', 'sensory_hard_limit']
+activity fields withheld: ['consent_given']
+request: client age_band=adult, 5 activities: ['a0', 'b1', 'b2', 'b3', 'b4']
+message length: 5946 chars
+good: results=[Result(activity_id='x', rank=1, why_fits=['a'], why_doesnt_cover=[], why_ask=[])]
+bad rejected OK: ValidationError
+
+--- Step 4: calling gemini-3.1-flash-lite ---
+model_ms: 5261  (D4 limit: 15000)
+parsed OK: 5 results
+
+#1  00000000-0000-0000-0000-0000000000a0
+  fits:    ["This activity is within your client's travel range and budget.", 'It is a small group session, which is helpful for someone who struggles with attention.', 'The venue is confirmed as step-free and has a low sensory load.']
+  doesn't: ["This activity does not match your client's interest in sport and fitness."]
+  ask:     ['Ask the provider if art materials are included in the cost.']
+
+#2  00000000-0000-0000-0000-0000000000b2
+  fits:    ["This activity is within your client's budget and travel range.", "The small group size supports the client's needs regarding attention span.", 'The session is step-free with a low sensory load.']
+  doesn't: ["This activity does not match the client's interest in sport and fitness."]
+  ask:     ['Ask if art materials are included in the price.']
+
+#3  00000000-0000-0000-0000-0000000000b3
+  fits:    ["This session fits the client's afternoon schedule.", 'The venue is step-free and offers a low sensory environment.', 'It is affordable and within the travel range.']
+  doesn't: ["This activity does not relate to the client's interest in sport and fitness."]
+  ask:     ['Ask if art materials are included in the session cost.']
+
+#4  00000000-0000-0000-0000-0000000000b1
+  fits:    ['The activity is affordable and located in a suitable suburb.', 'The low sensory environment and small group size are appropriate for the client.']
+  doesn't: ["This activity does not match the client's interest in sport and fitness."]
+  ask:     ['Confirm if the venue is step-free as this information is missing.', 'Check if art materials are provided for the session.']
+
+#5  00000000-0000-0000-0000-0000000000b4
+  fits:    ["The session is affordable and within the client's travel range.", 'The low sensory environment and small group size are beneficial for the client.']
+  doesn't: ["This activity does not match the client's interest in sport and fitness.", 'This activity is for individuals aged up to 24, which may not suit an adult client.']
+  ask:     ['Check if materials are included in the cost.']

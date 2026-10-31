@@ -1,0 +1,31 @@
+# Run 02: client c1 with "Art and craft" (after PR #12), prompt v1, 27 Oct 2026, branch at c0ffc85
+client fields withheld: ['birth_year', 'id', 'sensory_hard_limit']
+activity fields withheld: ['consent_given']
+request: client age_band=adult, 5 activities: ['a0', 'b1', 'b2', 'b3', 'b4']
+message length: 5969 chars
+good: results=[Result(activity_id='x', rank=1, why_fits=['a'], why_doesnt_cover=[], why_ask=[])]
+bad rejected OK: ValidationError
+
+--- Step 4: calling gemini-3.1-flash-lite ---
+model_ms: 4392  (D4 limit: 15000)
+parsed OK: 4 results
+
+#1  00000000-0000-0000-0000-0000000000a0
+  fits:    ["This activity matches the client's interest in art and craft.", 'It is a small group setting, which helps prevent overstimulation and keeps engagement manageable.', "The session is well within the client's budget and occurs on an available day."]
+  doesn't: []
+  ask:     ['Please confirm if the cost includes art materials or if the client needs to bring their own.']
+
+#2  00000000-0000-0000-0000-0000000000b2
+  fits:    ["This activity matches the client's interest in art and craft.", "It fits the client's preference for step-free access and low sensory environments.", "The session time is suitable for the client's availability."]
+  doesn't: []
+  ask:     ['Please confirm if the cost includes art materials or if there are additional fees.']
+
+#3  00000000-0000-0000-0000-0000000000b3
+  fits:    ["This activity aligns with the client's interest in art and craft.", 'The one-hour session length is shorter, which may help the client who struggles with long periods of engagement.']
+  doesn't: []
+  ask:     ['Please confirm if the cost includes art materials.', "Does the noon start time align with the client's transit requirements?"]
+
+#4  00000000-0000-0000-0000-0000000000b1
+  fits:    ["This activity aligns with the client's interest in art and craft.", "The session time and cost meet the client's requirements."]
+  doesn't: []
+  ask:     ['Confirm if the venue has step-free access as this information is currently unknown.', 'Please confirm if the cost includes art materials.']
