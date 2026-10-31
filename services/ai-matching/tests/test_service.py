@@ -133,6 +133,14 @@ def test_unparseable_then_good_recovers(match_request, ids):
     assert len(response.results) == 1
 
 
+def test_every_call_gives_gemini_at_least_10s(match_request, ids):
+    # Gemini returns 400 for a deadline under 10 s, so a retry must never ask for less
+    gemini = FakeGemini(server_error(503), {"results": [result(ids["a0"], 1)]})
+    service.match(match_request, gemini)
+    for call in gemini.calls:
+        assert call["config"].http_options.timeout >= service.MIN_DEADLINE_MS
+
+
 # --- What reaches Gemini ---
 
 

@@ -29,9 +29,11 @@ MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
 
 # The Core API stops waiting after 15 s (D4). Keep 2 s for the network and our checks.
 BUDGET_MS = 13_000
-# Only retry if at least this much of the budget is left; a retry that can't
-# finish just turns a model_error into a timeout on the Core API side.
-MIN_RETRY_MS = 4_000
+# Gemini rejects any call with a deadline under 10 s (400 INVALID_ARGUMENT,
+# found in the first real /match run). So a retry is only possible when the
+# first call failed within the first 3 s of the 13 s budget, e.g. a quick 503.
+MIN_DEADLINE_MS = 10_000
+MIN_RETRY_MS = MIN_DEADLINE_MS
 
 # --- Prompt (spike v2 + v0.4 "no good fit") ---
 # Rules only. The data goes in a separate message, so free-text fields
