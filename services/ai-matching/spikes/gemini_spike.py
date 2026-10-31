@@ -13,8 +13,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, Field, ValidationError
 
 # --- Step 1: build request from fixtures ---
 
@@ -305,7 +304,7 @@ if __name__ == "__main__":
     print("good:", ModelOutput.model_validate(good))
     try:
         ModelOutput.model_validate({"results": [{"activity_id": "x", "rank": 1}]})
-    except Exception as e:
+    except ValidationError as e:
         print("bad rejected OK:", type(e).__name__)
 
 

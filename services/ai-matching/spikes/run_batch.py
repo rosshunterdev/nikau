@@ -14,8 +14,14 @@ import json
 import time
 
 from gemini_spike import (
-    PROMPTS, REPO_ROOT, SHORTLISTS, build_request, call_gemini,
-    check_results, load, make_gemini,
+    PROMPTS,
+    REPO_ROOT,
+    SHORTLISTS,
+    build_request,
+    call_gemini,
+    check_results,
+    load,
+    make_gemini,
 )
 
 RUNS_DIR = REPO_ROOT / "docs" / "spikes" / "runs"
@@ -55,7 +61,7 @@ def run_batch(gemini, request, client_key, prompt_version, runs):
                                             if a["id"] not in kept_ids)
             except ValueError as e:          # check_results: invalid_output
                 error = str(e)
-            except Exception as e:           # rate limit (429), timeout, network
+            except Exception as e:  # noqa: BLE001 - log every failure, keep going
                 failed_ms = round((time.perf_counter() - start) * 1000)
                 error = f"after {failed_ms} ms: {type(e).__name__}: {e}"[:200]
 
