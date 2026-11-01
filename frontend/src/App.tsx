@@ -10,6 +10,7 @@ import ProviderList from './pages/ProviderList'
 import ProviderForm from './pages/ProviderForm'
 import ActivityList from './pages/ActivityList'
 import ActivityForm from './pages/ActivityForm'
+import SavedLeads from './pages/SavedLeads'
 
 type Profile = {
   user_id: string
@@ -94,7 +95,7 @@ export default function App() {
           <Route path="/activities" element={<ActivityList />} />
           <Route path="/activities/new" element={<ActivityForm />} />
           <Route path="/activities/:id" element={<ActivityForm />} />
-          <Route path="/leads" element={<p>Saved leads are coming soon.</p>} />
+          <Route path="/leads" element={<SavedLeads />} />
           <Route
             path="/providers"
             element={

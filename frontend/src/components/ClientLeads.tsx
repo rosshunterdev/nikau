@@ -1,19 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, ApiError } from '../lib/api'
-import type { Lead, LeadSource } from '../lib/types'
-
-const SOURCE_LABEL: Record<LeadSource, string> = {
-  ai_match: 'AI match',
-  manual_search: 'Catalogue search',
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-NZ', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
+import { formatDate, SOURCE_LABEL } from '../lib/leads'
+import type { Lead } from '../lib/types'
 
 // One part of the AI's explanation, e.g. "Why it fits", as a list
 function Why({ title, items }: { title: string; items: string[] }) {
