@@ -45,7 +45,10 @@ def list_activities(caller: CurrentCaller):
     Coordinators see all; other staff only activities from consented providers (RLS)."""
     res = (
         caller.db.table("activities")
-        .select("activity_id, name, cost_per_session, updated_at, providers(name), suburbs(name)")
+        .select(
+            "activity_id, name, cost_per_session, updated_at, "
+            "providers(name, consent_given), suburbs(name)"
+        )
         .is_("archived_at", "null")
         .order("name")
         .execute()
@@ -56,7 +59,13 @@ def list_activities(caller: CurrentCaller):
         provider = row.pop("providers") or {}
         suburb = row.pop("suburbs") or {}
         activities.append(
-            {**row, "provider_name": provider.get("name"), "suburb_name": suburb.get("name")}
+            {
+                **row,
+                "provider_name": provider.get("name"),
+                "suburb_name": suburb.get("name"),
+                # SCRUM-85: False = provider hasn't agreed to be listed (only coordinators see these)
+                "consent_given": provider.get("consent_given", False),
+            }
         )
     return activities
 

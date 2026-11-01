@@ -51,6 +51,7 @@ export type ActivitySummary = {
   provider_name: string
   suburb_name: string | null
   cost_per_session: number | null
+  consent_given: boolean
   updated_at: string
 }
 

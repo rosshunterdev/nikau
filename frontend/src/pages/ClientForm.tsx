@@ -185,7 +185,7 @@ function ClientForm({ id }: { id?: string }) {
        <h1>{id ? 'Edit client' : 'Add client'}</h1>
       <Link to="/clients">Back to clients</Link>
             {saved && (
-        <Link to={`/activities?${clientFilters(saved)}`}>
+        <Link to={`/activities?client=${saved.client_id}&${clientFilters(saved)}`}>
           Find activities in catalogue for {saved.preferred_name}
         </Link>
       )}

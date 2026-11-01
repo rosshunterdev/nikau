@@ -32,6 +32,7 @@ class ActivitySummary(BaseModel):
     suburb_name: str | None = None
     cost_per_session: float | None = None
     updated_at: datetime
+    consent_given: bool  # False = provider hasn't agreed to be listed (coordinators only see these)
 
 
 class ActivityDetail(BaseModel):
