@@ -4,6 +4,7 @@ import { api, ApiError } from '../lib/api'
 import { clientFilters } from '../lib/catalogueFilters'
 import { DAYS, LEVELS, SLOTS, SUPPORT_NEEDED, TRANSPORT } from '../lib/options'
 import type { ClientDetail, Suburb, Tag } from '../lib/types'
+import ClientLeads from '../components/ClientLeads'
 
 // What the form holds while you type. Numbers stay as text until saving.
 // availability is stored as keys like "mon-morning" to make ticking easy.
@@ -179,6 +180,7 @@ function ClientForm({ id }: { id?: string }) {
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit}>
        <h1>{id ? 'Edit client' : 'Add client'}</h1>
       <Link to="/clients">Back to clients</Link>
@@ -389,6 +391,10 @@ function ClientForm({ id }: { id?: string }) {
     <button type="submit" disabled={saving}>
     {saving ? 'Saving…' : id ? 'Save changes' : 'Save client'}
     </button>
-    </form>
+   </form>
+
+    {/* Saved leads: only for an existing client (a new one has none yet) */}
+    {id && <ClientLeads clientId={id} />}
+    </>
   )
 }

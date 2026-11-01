@@ -76,3 +76,24 @@ export type ActivityDetail = {
   sessions: ActivitySession[]
   updated_at: string
 }
+
+// Saved leads (match app/schemas/leads.py)
+
+export type LeadSource = 'ai_match' | 'manual_search'
+
+export type Lead = {
+  lead_id: string
+  client_id: string
+  activity_id: string
+  activity_name: string | null // null = no longer listed
+  provider_name: string | null
+  source: LeadSource
+  why_fits: string[]
+  why_doesnt_cover: string[]
+  why_ask: string[]
+  match_request_id: string | null
+  saved_by_name: string | null
+  saved_on: string
+}
+
+export type LeadWithClient = Lead & { client_name: string }
