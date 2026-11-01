@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { api, ApiError } from '../lib/api'
+import { clientFilters } from '../lib/catalogueFilters'
 import { DAYS, LEVELS, SLOTS, SUPPORT_NEEDED, TRANSPORT } from '../lib/options'
 import type { ClientDetail, Suburb, Tag } from '../lib/types'
 
@@ -87,6 +88,9 @@ function ClientForm({ id }: { id?: string }) {
 
   // Adding: start empty. Editing: null until the client has loaded.
   const [form, setForm] = useState<FormState | null>(id ? null : EMPTY)
+
+    // The client as last saved: the catalogue link uses this, not unsaved edits
+  const [saved, setSaved] = useState<ClientDetail>()
   const [suburbs, setSuburbs] = useState<Suburb[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [error, setError] = useState<string>()
@@ -109,7 +113,10 @@ function ClientForm({ id }: { id?: string }) {
   useEffect(() => {
     if (!id) return
     api<ClientDetail>(`/clients/${id}`)
-      .then((c) => setForm(fromDetail(c)))
+      .then((c) => {
+        setSaved(c)
+        setForm(fromDetail(c))
+      })
       .catch((err) =>
         setError(
           err instanceof ApiError && err.status === 404
@@ -175,6 +182,11 @@ function ClientForm({ id }: { id?: string }) {
     <form onSubmit={handleSubmit}>
        <h1>{id ? 'Edit client' : 'Add client'}</h1>
       <Link to="/clients">Back to clients</Link>
+            {saved && (
+        <Link to={`/activities?${clientFilters(saved)}`}>
+          Find activities in catalogue for {saved.preferred_name}
+        </Link>
+      )}
 
       {/* 1. About: always open */}
       <details open>

@@ -1,9 +1,12 @@
+from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from postgrest.exceptions import APIError
 from postgrest.types import ReturnMethod
+from pydantic import StringConstraints
 
+from app.catalogue import PREFILTER_FIELDS, nz_year, search_catalogue
 from app.deps import Caller, CurrentCaller
 from app.routers.clients import check_tags_exist
 from app.schemas.activities import (
@@ -13,6 +16,7 @@ from app.schemas.activities import (
     ActivitySummary,
     ActivityUpdate,
 )
+from app.schemas.enums import ClientTransport, Level, SupportNeeded
 
 router = APIRouter(tags=["activities"])
 
@@ -58,6 +62,79 @@ def list_activities(caller: CurrentCaller):
             {**row, "provider_name": provider.get("name"), "suburb_name": suburb.get("name")}
         )
     return activities
+
+# "mon-morning", "sat-evening"...: one day and time the client is free
+AVAILABLE_PATTERN = r"^(mon|tue|wed|thu|fri|sat|sun)-(morning|afternoon|evening)$"
+
+# The pattern applies to each item in the list, not to the list itself
+Available = Annotated[str, StringConstraints(pattern=AVAILABLE_PATTERN)]
+
+
+# Declared before /activities/{activity_id}, or FastAPI would read "search" as an id
+@router.get("/activities/search", response_model=list[ActivitySummary])
+def search_activities(
+    caller: CurrentCaller,
+    q: Annotated[str | None, Query(max_length=100)] = None,
+    suburb_id: UUID | None = None,
+    tags: Annotated[list[UUID] | None, Query()] = None,
+    max_physical_demand: Level | None = None,
+    max_sensory_load: Level | None = None,
+    sensory_hard_limit: bool = False,
+    needs_step_free: bool = False,
+    max_cost: Annotated[float | None, Query(ge=0)] = None,
+    birth_year: Annotated[int | None, Query(ge=1900, le=2100)] = None,
+    transport: Annotated[list[ClientTransport] | None, Query()] = None,
+    support_needed: SupportNeeded | None = None,
+    available: Annotated[list[Available] | None, Query()] = None,
+):
+    """The catalogue search, also the fallback when AI matching is unavailable (SCRUM-86).
+
+    The needs filters use the client's field names, so a client's needs can be passed
+    straight in, and the same pre-filter rules apply as for AI matching (SCRUM-66).
+    Unknown values never exclude an activity. Archived activities, and activities
+    whose provider hasn't consented, are always left out.
+    """
+    res = (
+        caller.db.table("activities")
+        .select(PREFILTER_FIELDS)
+        .is_("archived_at", "null")
+        .order("name")
+        .execute()
+    )
+
+    # The search filters, shaped like a client
+    needs = {
+        "max_physical_demand": max_physical_demand,
+        "max_sensory_load": max_sensory_load,
+        "sensory_hard_limit": sensory_hard_limit,
+        "needs_step_free": needs_step_free,
+        "max_cost": max_cost,
+        "birth_year": birth_year,
+        "transport": transport or [],
+        "support_needed": support_needed,
+        "availability": [
+            {"day": day, "slot": slot}
+            for day, slot in (item.split("-") for item in available or [])
+        ],
+    }
+
+    kept = search_catalogue(
+        res.data,
+        needs,
+        nz_year(),
+        q=q,
+        suburb_id=str(suburb_id) if suburb_id else None,
+        tags=[str(t) for t in tags or []],
+    )
+
+    return [
+        {
+            **a,
+            "provider_name": (a.get("providers") or {}).get("name"),
+            "suburb_name": (a.get("suburbs") or {}).get("name"),
+        }
+        for a in kept
+    ]
 
 
 @router.get("/activities/{activity_id}", response_model=ActivityDetail)

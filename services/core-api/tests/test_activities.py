@@ -1,11 +1,29 @@
+from types import SimpleNamespace
+
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from app.deps import get_caller
 from app.main import app
+from app.routers.activities import router as activities_router
 from app.schemas.activities import ActivityCreate, ActivitySession, ActivityUpdate
 
 client = TestClient(app)
+
+class EmptyQuery:
+    """Stands in for a Supabase query: every call returns itself, and it finds nothing."""
+
+    def __getattr__(self, name):
+        return lambda *args, **kwargs: self
+
+    def execute(self):
+        return SimpleNamespace(data=[])
+
+
+def fake_caller():
+    """A signed-in caller whose database is empty, so tests don't need Supabase."""
+    return SimpleNamespace(user_id="test", db=SimpleNamespace(table=lambda name: EmptyQuery()))
 
 POTTERY_ID = "e0000000-0000-0000-0000-000000000001"
 PROVIDER_ID = "d0000000-0000-0000-0000-000000000001"
@@ -73,3 +91,23 @@ def test_update_with_only_some_fields_passes():
 def test_update_cannot_clear_the_name():
     with pytest.raises(ValidationError):
         ActivityUpdate(name=None)
+
+def test_search_activities_requires_sign_in():
+    assert client.get("/activities/search").status_code == 401
+
+
+def test_search_is_not_read_as_an_activity_id():
+    # /activities/search must match the search route, not /activities/{activity_id}
+    paths = [route.path for route in activities_router.routes]
+    assert paths.index("/activities/search") < paths.index("/activities/{activity_id}")
+
+def test_search_checks_each_available_item():
+    """A bad day-and-slot is a 422, not a 500 (the pattern applies to each item)."""
+    app.dependency_overrides[get_caller] = fake_caller
+    try:
+        good = client.get("/activities/search?available=sat-morning")
+        bad = client.get("/activities/search?available=funday-night")
+    finally:
+        app.dependency_overrides.clear()
+    assert good.status_code == 200
+    assert bad.status_code == 422
