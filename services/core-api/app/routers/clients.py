@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 from postgrest.exceptions import APIError
 
-from app.deps import Caller, CurrentCaller
+from app.deps import CurrentCaller
 from app.schemas.clients import ClientCreate, ClientDetail, ClientSummary, ClientUpdate
 
 router = APIRouter(tags=["clients"])
@@ -60,17 +60,6 @@ def get_client(client_id: UUID, caller: CurrentCaller):
     return to_detail(row)
 
 
-def check_tags_exist(caller: Caller, tag_ids: set[str]) -> None:
-    """400 if any interest tag id isn't real. Run this BEFORE saving anything."""
-    if not tag_ids:
-        return
-    found = (
-        caller.db.table("tags").select("tag_id").in_("tag_id", list(tag_ids)).execute()
-    )
-    if len(found.data) != len(tag_ids):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown interest tag")
-
-
 # Postgres error codes from the save functions, turned into clear responses
 NOT_FOUND = "P0002"  # the client doesn't exist, or you can't see it
 NOT_ALLOWED = "42501"  # you can see it but can't edit it (RLS)
@@ -84,9 +73,9 @@ def save_error(e: APIError) -> HTTPException:
     if e.code == NOT_ALLOWED:
         return HTTPException(status.HTTP_403_FORBIDDEN, "You can't edit this client")
     if e.code == BAD_LINK:
-        return HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Check the suburb and interests"
-        )
+        if "tag_id" in (e.message or ""):
+            return HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown interest tag")
+        return HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown suburb")
     return HTTPException(status.HTTP_400_BAD_REQUEST, "Could not save client")
 
 
