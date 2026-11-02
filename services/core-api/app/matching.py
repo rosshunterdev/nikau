@@ -5,6 +5,11 @@ Supabase or Gemini. The endpoint in routers/matching.py loads the data and calls
 Contract: docs/api-contract.md v0.4, "How a match runs".
 """
 
+import time
+from dataclasses import dataclass, field
+
+import httpx
+
 from app.prefilter import prefilter
 
 # D2: the most activities sent to AI Matching in one request
@@ -167,3 +172,69 @@ def to_ai_request(
         "client": to_ai_client(client, tag_names, suburb_name, year),
         "shortlist": [to_ai_activity(a, tag_names) for a in shortlist],
     }
+
+
+# --- Calling AI Matching (contract v0.4, "Errors") ---
+
+# D4: the Core API stops waiting after 15 s
+TIMEOUT_SECONDS = 15
+
+
+@dataclass
+class MatchOutcome:
+    """What happened when we called AI Matching. result is a matching_log.result value."""
+
+    result: str  # success, no_good_fit, timeout, error, invalid_output
+    response_ms: int
+    results: list[dict] = field(default_factory=list)
+    model_ms: int | None = None
+    dropped_count: int | None = None
+
+
+def call_ai_matching(
+    body: dict,
+    url: str,
+    service_key: str,
+    http: httpx.Client | None = None,
+) -> MatchOutcome:
+    """POST /match and turn the reply into a matching_log result.
+
+    200 with results → success; 200 with no results → no_good_fit (D7);
+    502 invalid_output → invalid_output; any other error reply → error;
+    no reply within 15 s → timeout; can't connect → error.
+    http: pass a client in tests (httpx.MockTransport) so no real call is made.
+    """
+    http = http or httpx.Client(timeout=TIMEOUT_SECONDS)
+    start = time.perf_counter()
+
+    def elapsed() -> int:
+        return round((time.perf_counter() - start) * 1000)
+
+    try:
+        reply = http.post(
+            f"{url.rstrip('/')}/match",
+            json=body,
+            headers={"Authorization": f"Bearer {service_key}"},
+        )
+    except httpx.TimeoutException:
+        return MatchOutcome("timeout", elapsed())
+    except httpx.HTTPError:  # can't connect, connection dropped...
+        return MatchOutcome("error", elapsed())
+
+    try:
+        data = reply.json()
+    except ValueError:  # not JSON at all
+        return MatchOutcome("error", elapsed())
+
+    if reply.status_code != 200:
+        code = (data.get("error") or {}).get("code") if isinstance(data, dict) else None
+        return MatchOutcome("invalid_output" if code == "invalid_output" else "error", elapsed())
+
+    results = data.get("results") or []
+    return MatchOutcome(
+        "success" if results else "no_good_fit",
+        elapsed(),
+        results=results,
+        model_ms=data.get("model_ms"),
+        dropped_count=data.get("dropped_count"),
+    )
