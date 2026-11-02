@@ -111,3 +111,6 @@ def test_search_checks_each_available_item():
         app.dependency_overrides.clear()
     assert good.status_code == 200
     assert bad.status_code == 422
+
+def test_find_activities_requires_sign_in():
+    assert client.post(f"/clients/{POTTERY_ID}/match").status_code == 401

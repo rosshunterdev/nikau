@@ -6,10 +6,13 @@ Contract: docs/api-contract.md v0.4, "How a match runs".
 """
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from uuid import uuid4
 
 import httpx
 
+from app.catalogue import to_prefilter_activity
 from app.prefilter import prefilter
 
 # D2: the most activities sent to AI Matching in one request
@@ -238,3 +241,82 @@ def call_ai_matching(
         model_ms=data.get("model_ms"),
         dropped_count=data.get("dropped_count"),
     )
+
+
+# --- One whole match (contract v0.4, "How a match runs") ---
+
+# The client fields a match needs: the pre-filter's, plus the "To AI" ones
+CLIENT_MATCH_FIELDS = (
+    "client_id, organisation_id, suburb_id, birth_year, travel_range_minutes, goals, "
+    "participation_notes, max_physical_demand, physical_notes, needs_step_free, "
+    "max_sensory_load, sensory_notes, sensory_hard_limit, transport, support_needed, "
+    "max_cost, suburbs(name), client_interests(tag_id), client_availability(day, slot)"
+)
+
+# What the screen says for each result other than success (contract "Fallback")
+MESSAGES = {
+    "no_candidates": "No activities passed this client's filters.",
+    "no_good_fit": "None of the shortlisted activities are a good fit. Try the catalogue.",
+    "timeout": "Matching is unavailable right now. Try the catalogue.",
+    "error": "Matching is unavailable right now. Try the catalogue.",
+    "invalid_output": "Matching is unavailable right now. Try the catalogue.",
+}
+
+
+def run_match(
+    client_row: dict,
+    activity_rows: list[dict],
+    tag_rows: list[dict],
+    requested_by: str,
+    year: int,
+    call: Callable[[dict], MatchOutcome],
+) -> tuple[dict, dict]:
+    """Shortlist, ask AI Matching, and prepare the matching_log row and the response.
+
+    call: sends the request (call_ai_matching in the app, a fake in tests).
+    Returns (log_row, response). The endpoint saves log_row and returns response.
+    """
+    client = to_prefilter_client(client_row)
+    activities = [to_prefilter_activity(row) for row in activity_rows]
+    shortlist = build_shortlist(client, activities, year)
+    request_id = str(uuid4())
+
+    log = {
+        "request_id": request_id,
+        "organisation_id": client_row["organisation_id"],
+        "requested_by": requested_by,
+        "called_as": "http",
+        "candidate_count": len(shortlist),
+    }
+
+    # Nothing passed the client's filters: don't call the AI at all
+    if not shortlist:
+        log |= {"result": "no_candidates", "leads_shown": 0, "fallback_shown": True}
+        return log, response(request_id, "no_candidates", [])
+
+    tag_names = {t["tag_id"]: t["name"] for t in tag_rows}
+    suburb_name = (client_row.get("suburbs") or {}).get("name")
+    outcome = call(to_ai_request(request_id, client, shortlist, tag_names, suburb_name, year))
+
+    # Add the activity's name to each lead, for the screen
+    by_id = {a["activity_id"]: a for a in shortlist}
+    leads = [
+        {**r, "activity_name": by_id[r["activity_id"]]["name"]}
+        for r in outcome.results
+        if r["activity_id"] in by_id
+    ]
+
+    log |= {
+        "result": outcome.result,
+        "response_ms": outcome.response_ms,
+        "model_ms": outcome.model_ms,
+        "dropped_count": outcome.dropped_count,
+        "leads_shown": len(leads),
+        "fallback_shown": outcome.result != "success",
+    }
+    return log, response(request_id, outcome.result, leads)
+
+
+def response(request_id: str, result: str, leads: list[dict]) -> dict:
+    """The endpoint's reply. message is set whenever the screen should fall back."""
+    return {"request_id": request_id, "result": result, "message": MESSAGES.get(result), "leads": leads}
