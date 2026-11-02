@@ -59,10 +59,12 @@ def get_client(client_id: UUID, caller: CurrentCaller):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Client not found")
     return to_detail(row)
 
+
 # Postgres error codes from the save functions, turned into clear responses
 NOT_FOUND = "P0002"  # the client doesn't exist, or you can't see it
 NOT_ALLOWED = "42501"  # you can see it but can't edit it (RLS)
 BAD_LINK = "23503"  # a suburb or interest tag that doesn't exist
+
 
 def save_error(e: APIError) -> HTTPException:
     """Turn a database error into a clear message for the form."""
@@ -71,9 +73,9 @@ def save_error(e: APIError) -> HTTPException:
     if e.code == NOT_ALLOWED:
         return HTTPException(status.HTTP_403_FORBIDDEN, "You can't edit this client")
     if e.code == BAD_LINK:
-        return HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Check the suburb and interests"
-        )
+        if "tag_id" in (e.message or ""):
+            return HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown interest tag")
+        return HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown suburb")
     return HTTPException(status.HTTP_400_BAD_REQUEST, "Could not save client")
 
 

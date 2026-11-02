@@ -166,7 +166,6 @@ def require_coordinator(caller: Caller) -> None:
             status.HTTP_403_FORBIDDEN, "Only coordinators can add or edit activities"
         )
 
-
 def save_error(e: APIError) -> HTTPException:
     """Turn a database error from the save functions into a clear message for the form."""
     if e.code == NOT_FOUND:
@@ -174,15 +173,19 @@ def save_error(e: APIError) -> HTTPException:
     if e.code == NOT_ALLOWED:
         return HTTPException(status.HTTP_403_FORBIDDEN, "Only coordinators can add or edit activities")
     if e.code == CHECK_FAILED:
+        if "session_ends_after_start" in (e.message or ""):
+            return HTTPException(status.HTTP_400_BAD_REQUEST, "A session must end after it starts")
         return HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Check the ages and session times"
+            status.HTTP_400_BAD_REQUEST, "Minimum age can't be above the maximum age"
         )
     if e.code == BAD_LINK:
-        return HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Check the provider, suburb and interests"
-        )
+        text = e.message or ""
+        if "tag_id" in text:
+            return HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown interest tag")
+        if "suburb_id" in text:
+            return HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown suburb")
+        return HTTPException(status.HTTP_400_BAD_REQUEST, "Unknown provider")
     return HTTPException(status.HTTP_400_BAD_REQUEST, "Could not save activity")
-
 
 @router.post(
     "/activities", response_model=ActivityDetail, status_code=status.HTTP_201_CREATED

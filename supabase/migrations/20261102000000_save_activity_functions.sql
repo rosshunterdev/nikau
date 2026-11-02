@@ -19,6 +19,11 @@ declare
   a             public.activities;
   v_activity_id uuid := gen_random_uuid();
 begin
+  -- Only coordinators add to the catalogue (RLS blocks it too; this gives a clear error)
+  if not public.is_coordinator() then
+    raise exception 'Only coordinators can add activities' using errcode = '42501';
+  end if;
+
   -- Turn the JSON into a typed activities row; keys we don't copy below are ignored
   a := jsonb_populate_record(null::public.activities, p_activity);
 
@@ -77,6 +82,12 @@ begin
   select * into a from public.activities where activity_id = p_activity_id;
   if not found then
     raise exception 'Activity not found' using errcode = 'P0002';
+  end if;
+  
+    -- Only coordinators edit the catalogue. RLS already blocks the row update, but a
+  -- tag- or session-only edit would otherwise do nothing and still succeed.
+  if not public.is_coordinator() then
+    raise exception 'Only coordinators can edit activities' using errcode = '42501';
   end if;
 
   if p_changes <> '{}'::jsonb then
