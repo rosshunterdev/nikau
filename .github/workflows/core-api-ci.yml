@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "services/core-api/**"
+      - "services/ai-matching/ai_matching/contract.py"
       - ".github/workflows/core-api-ci.yml"
 
 jobs:
