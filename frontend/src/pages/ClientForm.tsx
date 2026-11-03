@@ -5,6 +5,7 @@ import { clientFilters } from '../lib/catalogueFilters'
 import { DAYS, LEVELS, SLOTS, SUPPORT_NEEDED, TRANSPORT } from '../lib/options'
 import type { ClientDetail, Suburb, Tag } from '../lib/types'
 import ClientLeads from '../components/ClientLeads'
+import FindActivities from '../components/FindActivities'
 
 // What the form holds while you type. Numbers stay as text until saving.
 // availability is stored as keys like "mon-morning" to make ticking easy.
@@ -96,6 +97,9 @@ function ClientForm({ id }: { id?: string }) {
   const [tags, setTags] = useState<Tag[]>([])
   const [error, setError] = useState<string>()
   const [saving, setSaving] = useState(false)
+
+  // Goes up each time a lead is saved from Find activities, so the saved leads reload
+  const [leadsVersion, setLeadsVersion] = useState(0)
 
   // Wide screens start with every section open; phones show only the first
   const [wide] = useState(() => window.matchMedia('(min-width: 768px)').matches)
@@ -393,8 +397,11 @@ function ClientForm({ id }: { id?: string }) {
     </button>
    </form>
 
-    {/* Saved leads: only for an existing client (a new one has none yet) */}
-    {id && <ClientLeads clientId={id} />}
+  {/* Find activities and saved leads: only for an existing client */}
+    {saved && (
+      <FindActivities client={saved} onSaved={() => setLeadsVersion((v) => v + 1)} />
+    )}
+    {id && <ClientLeads key={leadsVersion} clientId={id} />}
     </>
   )
 }
