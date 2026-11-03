@@ -35,7 +35,7 @@ see nothing, and signed-out visitors have no access to any table.
 | Activities: delete | No one (would delete saved leads) | No one |
 | Matching log: add | Their own requests | Their own requests |
 | Matching log: view | Their own requests | Their organisation's requests |
-| Saved leads: view / remove | For clients they can see | For clients they can see |
+| Saved leads: view / remove (remove is on the client profile) | For clients they can see | For clients they can see |
 | Saved leads: save from AI match | Own requests only | Own requests only |
 | Saved leads: save from catalogue | For clients they can see | For clients they can see |
 | Saved leads: edit | No one (a lead is a snapshot) | No one |
@@ -79,7 +79,7 @@ client straight away.
   listed" wording is wrong for it. Left as is while the consent gate is under review (SCRUM-104).
 - AI-match leads store the explanation the browser sends. The API doesn't check that the
   activity or the text came from that match, because match results aren't stored. A known
-  limit for RQ2 ("leads saved out of leads shown") until SCRUM-87 (SCRUM-106).
+  limit for RQ2 ("leads saved out of leads shown"), tracked in SCRUM-106.
 - If a matching log entry is deleted, saved leads keep their details but lose the link
   to the request (`match_request_id` is set to null).
 
