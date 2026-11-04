@@ -65,6 +65,7 @@ nikau/
 ├── supabase/
 │   ├── config.toml        # Local Supabase settings
 │   ├── migrations/        # Database schema, applied in timestamp order
+│   ├── db-tests/          # SQL tests for access rules and save functions (run in CI)
 │   └── seed.sql           # Local test data only (never pushed to the hosted project)
 ├── services/
 │   ├── core-api/          # FastAPI service: clients, activities, auth, database access
@@ -116,6 +117,25 @@ supabase stop       # stops it and keeps your data
 | cora@test.nikau | Coordinator | Test Org |
 | will@test.nikau | Support worker | Test Org |
 | olive@other.nikau | Coordinator | Other Org |
+
+### Database tests
+`supabase/db-tests/` holds SQL tests for the access rules (RLS) and save functions.
+Each file runs as the seed users (Cora, Will, Olive), checks what they can and can't do,
+then rolls everything back, so the seed data is never changed.
+CI runs them on every pull request that changes `supabase/` (`.github/workflows/db-tests.yml`).
+
+Run them locally from the repo root (PowerShell, Docker running):
+```powershell
+supabase db reset
+Get-ChildItem supabase\db-tests\*.sql | ForEach-Object {
+  "== $($_.Name)"
+  Get-Content $_.FullName -Raw | docker exec -i supabase_db_nikau psql -U postgres -v ON_ERROR_STOP=1 -q
+}
+```
+Each file prints `NOTICE: SCRUM-xx: all tests passed`; any failed check stops with an error.
+
+Adding a test: create the next numbered file, start with `begin;`, end with `rollback;`,
+use `assert` for each check, and finish with a `raise notice '... all tests passed'`.
 
 ## Project management
 
