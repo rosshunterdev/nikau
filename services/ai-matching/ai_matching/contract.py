@@ -143,11 +143,12 @@ class Result(BaseModel):
         "or needs, using only the fields sent"
     )
     why_doesnt_cover: list[str] = Field(
-        description="0-3 lines: needs it doesn't meet, incl. sensory load above "
-        "the client's level and any support worker charge"
+        description="0-3 lines: needs it is known not to meet, incl. sensory load "
+        "above the client's level and any support worker charge. Unknowns go in why_ask"
     )
     why_ask: list[str] = Field(
-        description="0-3 lines: unknowns (null fields) to check with the provider"
+        description="0-3 lines: unknowns (null or empty fields) that matter for this "
+        "client, to check with the provider"
     )
 
 
