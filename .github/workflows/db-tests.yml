@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.121.0
       # Same as running it locally: migrations, then seed.sql and seeds/catalogue.sql
       - run: supabase start
       - name: Run SQL tests
