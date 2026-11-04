@@ -2,21 +2,8 @@ import { useEffect, useState } from 'react'
 import { api, ApiError } from '../lib/api'
 import { formatDate, SOURCE_LABEL } from '../lib/leads'
 import type { Lead } from '../lib/types'
+import Why from './Why'
 
-// One part of the AI's explanation, e.g. "Why it fits", as a list
-function Why({ title, items }: { title: string; items: string[] }) {
-  if (items.length === 0) return null
-  return (
-    <>
-      <h4>{title}</h4>
-      <ul>
-        {items.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
-    </>
-  )
-}
 
 // A client's saved leads, shown on their profile, with Remove
 export default function ClientLeads({ clientId }: { clientId: string }) {

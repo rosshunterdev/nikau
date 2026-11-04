@@ -98,3 +98,29 @@ export type Lead = {
 }
 
 export type LeadWithClient = Lead & { client_name: string }
+
+// Find activities (match app/schemas/matching.py, SCRUM-87)
+
+export type MatchResult =
+  | 'success'
+  | 'no_good_fit'
+  | 'no_candidates'
+  | 'timeout'
+  | 'error'
+  | 'invalid_output'
+
+export type MatchLead = {
+  activity_id: string
+  activity_name: string
+  rank: number
+  why_fits: string[]
+  why_doesnt_cover: string[]
+  why_ask: string[]
+}
+
+export type FindActivitiesResponse = {
+  request_id: string
+  result: MatchResult
+  message: string | null // set when the screen should fall back to the catalogue
+  leads: MatchLead[]
+}
