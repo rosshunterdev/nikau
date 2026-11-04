@@ -398,7 +398,7 @@ function ClientForm({ id }: { id?: string }) {
    </form>
 
   {/* Find activities and saved leads: only for an existing client */}
-    {saved && (
+  {saved && (
       <FindActivities client={saved} onSaved={() => setLeadsVersion((v) => v + 1)} />
     )}
     {id && <ClientLeads key={leadsVersion} clientId={id} />}

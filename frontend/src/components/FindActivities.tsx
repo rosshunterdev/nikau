@@ -28,12 +28,19 @@ export default function FindActivities({ client, onSaved }: Props) {
     setSaveMessage(undefined)
     setMatch(undefined)
     try {
-      const [result, leads] = await Promise.all([
+      // Both run at once. The saved leads are a nice-to-have: if only they fail,
+      // still show the match (saving an already-saved lead shows "Saved" anyway, via 409)
+      const [matchRes, leadsRes] = await Promise.allSettled([
         api<FindActivitiesResponse>(`/clients/${client.client_id}/match`, { method: 'POST' }),
-        api<Lead[]>(`/clients/${client.client_id}/leads`), // to show which are already saved
+        api<Lead[]>(`/clients/${client.client_id}/leads`),
       ])
-      setSaved(new Set(leads.map((l) => l.activity_id)))
-      setMatch(result)
+      if (matchRes.status === 'rejected') throw matchRes.reason
+      setSaved(
+        leadsRes.status === 'fulfilled'
+          ? new Set(leadsRes.value.map((l) => l.activity_id))
+          : new Set(),
+      )
+      setMatch(matchRes.value)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Can't reach the server. Try again.")
     } finally {
