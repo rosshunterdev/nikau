@@ -25,7 +25,12 @@ from ai_matching.contract import (
     Result,
 )
 
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
+DEFAULT_MODEL = "gemini-3.5-flash-lite"  # 3.1 overloaded (503s), 2.5 closed to new users
+
+def model_name() -> str:
+    """Read GEMINI_MODEL each call, not at import, so a .env loaded after
+    this file is imported still counts (and the direct call gets it too)."""
+    return os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
 
 # The Core API stops waiting after 15 s (D4). Keep 2 s for the network and our checks.
 BUDGET_MS = 13_000
@@ -120,7 +125,7 @@ def call_model(gemini, request: MatchRequest) -> tuple[ModelOutput, int]:
         )
         try:
             response = gemini.models.generate_content(
-                model=MODEL, contents=message, config=config
+                model=model_name(), contents=message, config=config
             )
         except (errors.APIError, httpx.HTTPError) as e:
             can_retry = attempt == 1 and _is_503(e)

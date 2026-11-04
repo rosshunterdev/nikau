@@ -152,3 +152,23 @@ def test_prompt_has_data_but_not_request_id(match_request):
     assert '"age_band": "adult"' in call["contents"]
     assert "birth_year" not in call["contents"]
     assert call["config"].system_instruction == service.SYSTEM_INSTRUCTION
+
+
+
+
+# --- Model name (SCRUM-113) ---
+
+
+def test_model_comes_from_env_at_call_time(monkeypatch, match_request, ids):
+    # Set AFTER service.py was imported, like load_dotenv() does in main.py
+    monkeypatch.setenv("GEMINI_MODEL", "test-model")
+    gemini = FakeGemini({"results": [result(ids["a0"], 1)]})
+    service.match(match_request, gemini)
+    assert gemini.calls[0]["model"] == "test-model"
+
+
+def test_default_model_when_env_not_set(monkeypatch, match_request, ids):
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    gemini = FakeGemini({"results": [result(ids["a0"], 1)]})
+    service.match(match_request, gemini)
+    assert gemini.calls[0]["model"] == service.DEFAULT_MODEL
