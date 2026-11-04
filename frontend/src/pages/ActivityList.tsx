@@ -205,7 +205,7 @@ export default function ActivityList() {
                         type="button"
                         onClick={() => saveLead(a)}
                         disabled={savingId === a.activity_id}
-                        aria-label={`Save ${a.name} as a lead for ${forClient.name}`}
+                        aria-label={`Save as lead: ${a.name} for ${forClient.name}`}
                       >
                         {savingId === a.activity_id ? 'Saving…' : 'Save as lead'}
                       </button>
