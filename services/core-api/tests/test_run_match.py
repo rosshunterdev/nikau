@@ -1,6 +1,6 @@
 """A whole match (SCRUM-87) with a fake AI Matching: what gets logged, what's returned."""
 
-from app.matching import MatchOutcome, run_match
+from app.matching import MatchOutcome, reply_when_log_failed, run_match
 
 CLIENT = {
     "client_id": "c1",
@@ -80,3 +80,21 @@ def test_leads_not_on_the_shortlist_are_dropped():
     stray = {**LEAD, "activity_id": "not-sent"}
     _, reply, _ = run([activity("e1")], MatchOutcome("success", 1000, [LEAD, stray], 900, 0))
     assert [lead["activity_id"] for lead in reply["leads"]] == ["e1"]
+    
+
+def test_log_failure_hides_leads_and_falls_back():
+    _, reply, _ = run([activity("e1")], MatchOutcome("success", 900, [LEAD]))
+    assert reply["leads"]  # the AI did suggest something
+
+    after = reply_when_log_failed(reply)
+
+    assert after["leads"] == []
+    assert after["result"] == "error"
+    assert after["message"] == "Matching is unavailable right now. Try the catalogue."
+    assert after["request_id"] == reply["request_id"]
+
+
+def test_log_failure_keeps_a_reply_that_has_no_leads():
+    _, reply, _ = run([activity("e1")], MatchOutcome("no_good_fit", 900))
+
+    assert reply_when_log_failed(reply) == reply

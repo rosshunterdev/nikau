@@ -320,3 +320,15 @@ def run_match(
 def response(request_id: str, result: str, leads: list[dict]) -> dict:
     """The endpoint's reply. message is set whenever the screen should fall back."""
     return {"request_id": request_id, "result": result, "message": MESSAGES.get(result), "leads": leads}
+
+
+def reply_when_log_failed(reply: dict) -> dict:
+    """The matching_log row couldn't be saved (SCRUM-106).
+
+    A saved lead must point to a matching_log row you made, so without the row
+    none of these leads could be saved. Show the fallback instead of leads that
+    would fail on Save. A reply with no leads is already a fallback: keep it.
+    """
+    if not reply["leads"]:
+        return reply
+    return response(reply["request_id"], "error", [])
