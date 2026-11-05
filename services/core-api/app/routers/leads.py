@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Response, status
@@ -7,6 +8,7 @@ from app.deps import Caller, CurrentCaller
 from app.schemas.leads import LeadCreate, LeadDetail, LeadWithClient
 
 router = APIRouter(tags=["leads"])
+logger = logging.getLogger(__name__)
 
 # The lead, plus the activity and provider names and who saved it.
 # If RLS hides the activity (consent withdrawn), "activities" comes back empty.
@@ -123,7 +125,9 @@ def save_lead(client_id: UUID, body: LeadCreate, caller: CurrentCaller):
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST, "This activity can't be saved for this client"
             )
-        # Anything else is unexpected: our fault, not the user's
+        # Anything else is unexpected: our fault, not the user's. Log the cause
+        # (code and message only: the details can hold the row's values).
+        logger.warning("lead insert failed for client %s: %s %s", client_id, e.code, e.message)
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not save lead")
 
     return get_lead(caller, res.data[0]["lead_id"])
