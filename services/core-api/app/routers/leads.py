@@ -123,7 +123,8 @@ def save_lead(client_id: UUID, body: LeadCreate, caller: CurrentCaller):
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST, "This activity can't be saved for this client"
             )
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Could not save lead")
+        # Anything else is unexpected: our fault, not the user's
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not save lead")
 
     return get_lead(caller, res.data[0]["lead_id"])
 
