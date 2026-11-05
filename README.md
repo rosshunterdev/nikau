@@ -162,6 +162,18 @@ Each file prints `NOTICE: SCRUM-xx: all tests passed`; any failed check stops wi
 Adding a test: create the next numbered file, start with `begin;`, end with `rollback;`,
 use `assert` for each check, and finish with a `raise notice '... all tests passed'`.
 
+
+### Writing migrations
+- Create one with `supabase migration new <name>`. Never edit a migration that has already been merged: add a new one.
+- **New database functions can't be run by anyone until you say so** (SCRUM-61 removed the default). Any function the app calls needs both lines at the end of its migration:
+  ```sql
+  revoke execute on function public.<name>(<args>) from public, anon;
+  grant execute on function public.<name>(<args>) to authenticated;
+  ```
+  Without the `grant`, the app gets "permission denied" when calling it. See `create_client_full` in `20261030135700_save_client_functions.sql` for an example.
+- Add or update a test file in `supabase/db-tests/` for any new rule or function.
+
+
 ## Project management
 
 - Jira board and Confluence: https://sd205.atlassian.net
