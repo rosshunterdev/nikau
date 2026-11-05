@@ -1,6 +1,7 @@
 import logging
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, HTTPException, status
 from postgrest.exceptions import APIError
 from postgrest.types import ReturnMethod
@@ -12,6 +13,7 @@ from app.matching import (
     CLIENT_MATCH_FIELDS,
     MATCH_ACTIVITY_FIELDS,
     call_ai_matching,
+    reply_when_log_failed,
     run_match,
 )
 from app.schemas.matching import FindActivitiesResponse
@@ -59,10 +61,12 @@ def find_activities(client_id: UUID, caller: CurrentCaller):
         ),
     )
 
-    # 4. Log it for RQ1. If logging fails, still give the worker their results.
+    # 4. Log it for RQ1. Saved leads point to this row, so if it isn't saved
+    # the leads couldn't be saved either: show the fallback instead (SCRUM-106).
     try:
         caller.db.table("matching_log").insert(log_row, returning=ReturnMethod.minimal).execute()
-    except APIError as e:
+    except (APIError, httpx.HTTPError) as e:
         log.warning("matching_log insert failed for %s: %s", log_row["request_id"], e)
+        reply = reply_when_log_failed(reply)
 
     return reply
