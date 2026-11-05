@@ -48,7 +48,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 
     throw new ApiError(res.status, message)
   }
-  
+
   // 204 No Content (e.g. DELETE): nothing to read
   if (res.status === 204) return undefined as T
   return res.json() as Promise<T>

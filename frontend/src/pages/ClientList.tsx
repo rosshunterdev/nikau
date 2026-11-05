@@ -74,9 +74,9 @@ export default function ClientList() {
               <Link
                 to={`/clients/${c.client_id}`}
                 className="button button-soft"
-                aria-label={`Open profile for ${c.preferred_name}`}
+                aria-label={`Edit ${c.preferred_name}`}
               >
-                View profile
+                Edit
               </Link>
             </li>
           ))}
