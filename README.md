@@ -20,7 +20,24 @@ git clone <repo-url>
 cd nikau
 ```
 
-Copy `.env.example` to `.env` and fill in the values. Never commit secrets. Keep keys in a local `.env` file, which is git-ignored.
+### Environment files
+Each part reads its own settings file. Copy each template, then fill in the blanks:
+
+| Template | Copy to | Used by |
+| --- | --- | --- |
+| `.env.example` | `.env` (repo root) | AI Matching |
+| `services/core-api/.env.example` | `services/core-api/.env` | Core API |
+| `frontend/.env.example` | `frontend/.env.local` | Frontend |
+
+- Supabase values for local development: run `supabase status -o env` from the repo root.
+- `GEMINI_API_KEY`: create one in Google AI Studio.
+- `MATCHING_SERVICE_KEY`: the Core API and AI Matching must have the **same** value, or every match shows the fallback message. Make one with:
+  ```bash
+  python -c "import secrets; print(secrets.token_urlsafe(32))"
+  ```
+- `CORS_ORIGINS` must be a JSON list, for example `["http://localhost:5173","http://localhost:5174"]`. A plain URL stops the Core API from starting.
+
+All `.env` files are git-ignored. Never commit real keys or paste them into chat, Jira or screenshots. Use different keys locally and on Vercel.
 
 ### Core API
 
