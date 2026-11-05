@@ -78,28 +78,36 @@ Open http://localhost:5173
 ```
 nikau/
 ├── .github/
-│   └── workflows/         # CI: frontend, core-api and ai-matching checks
+│   └── workflows/         # CI: frontend, core-api, ai-matching and database checks
+├── docs/                  # API contract, access rules, Gemini spike notes
+├── fixtures/              # Sample clients and activities for tests and the spike
 ├── supabase/
 │   ├── config.toml        # Local Supabase settings
 │   ├── migrations/        # Database schema, applied in timestamp order
 │   ├── db-tests/          # SQL tests for access rules and save functions (run in CI)
+│   ├── seeds/             # Activity catalogue test data (loaded after seed.sql)
 │   └── seed.sql           # Local test data only (never pushed to the hosted project)
 ├── services/
-│   ├── core-api/          # FastAPI service: clients, activities, auth, database access
+│   ├── core-api/          # FastAPI service: clients, activities, leads, matching, database access
 │   │   ├── app/
-│   │   │   └── main.py    # App entry point and routes
+│   │   │   ├── main.py    # App entry point
+│   │   │   ├── routers/   # One file of endpoints per area (clients, leads, matching...)
+│   │   │   └── schemas/   # Request and response shapes
 │   │   ├── tests/
+│   │   ├── .env.example   # Core API settings (copy to services/core-api/.env)
 │   │   └── requirements.txt
-│   └── ai-matching/       # FastAPI service: activity matching and explanations
+│   └── ai-matching/       # FastAPI service: ranks the shortlist with Gemini and explains why
+│       ├── ai_matching/   # Contract and Gemini call
 │       ├── app/
-│       │   └── main.py
+│       │   └── main.py    # App entry point
 │       ├── tests/
 │       └── requirements.txt
 ├── frontend/              # React + TypeScript app (Vite)
 │   ├── src/
 │   ├── public/
+│   ├── .env.example       # Frontend settings (copy to frontend/.env.local)
 │   └── package.json
-├── .env.example           # Template for environment variables (copy to .env)
+├── .env.example           # AI Matching settings (copy to .env in the repo root)
 ├── .gitignore
 └── README.md
 ```
@@ -153,6 +161,18 @@ Each file prints `NOTICE: SCRUM-xx: all tests passed`; any failed check stops wi
 
 Adding a test: create the next numbered file, start with `begin;`, end with `rollback;`,
 use `assert` for each check, and finish with a `raise notice '... all tests passed'`.
+
+
+### Writing migrations
+- Create one with `supabase migration new <name>`. Never edit a migration that has already been merged: add a new one.
+- **New database functions can't be run by anyone until you say so** (SCRUM-61 removed the default). Any function the app calls needs both lines at the end of its migration:
+  ```sql
+  revoke execute on function public.<name>(<args>) from public, anon;
+  grant execute on function public.<name>(<args>) to authenticated;
+  ```
+  Without the `grant`, the app gets "permission denied" when calling it. See `create_client_full` in `20261030135700_save_client_functions.sql` for an example.
+- Add or update a test file in `supabase/db-tests/` for any new rule or function.
+
 
 ## Project management
 
