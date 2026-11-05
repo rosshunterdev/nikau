@@ -1,0 +1,26 @@
+name: db-tests
+
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - ".github/workflows/db-tests.yml"
+
+jobs:
+  sql-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+      # Same as running it locally: migrations, then seed.sql and seeds/catalogue.sql
+      - run: supabase start
+      - name: Run SQL tests
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          for f in supabase/db-tests/*.sql; do
+            echo "== $f"
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$f"
+          done
