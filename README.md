@@ -154,6 +154,15 @@ Each file prints `NOTICE: SCRUM-xx: all tests passed`; any failed check stops wi
 Adding a test: create the next numbered file, start with `begin;`, end with `rollback;`,
 use `assert` for each check, and finish with a `raise notice '... all tests passed'`.
 
+#### Core API tests against the database
+`services/core-api/tests/db/` signs in as the seed users and calls the real API, so RLS and the save functions run for real. With Supabase running (`supabase db reset` first for fresh seed data), from `services/core-api`:
+```bash
+python -m pytest tests/db -v
+```
+Without Supabase they're skipped, so `python -m pytest` still works anywhere. They only ever run against `localhost`, because they create and delete rows. In CI they run in the same `db-tests` workflow as the SQL tests.
+
+If `supabase start` fails on Windows with "forbidden by its access permissions", Windows has reserved the port. In an Administrator PowerShell, run `net stop winnat` then `net start winnat`.
+
 ## Project management
 
 - Jira board and Confluence: https://sd205.atlassian.net

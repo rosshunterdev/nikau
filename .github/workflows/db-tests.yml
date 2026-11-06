@@ -4,18 +4,24 @@ on:
   pull_request:
     paths:
       - "supabase/**"
+      - "services/core-api/**"
       - ".github/workflows/db-tests.yml"
 
 jobs:
-  sql-tests:
+  database:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
           version: 2.121.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
       # Same as running it locally: migrations, then seed.sql and seeds/catalogue.sql
       - run: supabase start
+
       - name: Run SQL tests
         env:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
@@ -24,3 +30,20 @@ jobs:
             echo "== $f"
             psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$f"
           done
+
+      # The local URL and publishable key aren't secrets: they're the same for every local Supabase
+      - name: Point the Core API at the test database
+        run: |
+          eval "$(supabase status -o env)"
+          echo "SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "SUPABASE_PUBLISHABLE_KEY=${PUBLISHABLE_KEY:-$ANON_KEY}" >> "$GITHUB_ENV"
+
+      - name: Install Core API
+        working-directory: services/core-api
+        run: pip install -r requirements-dev.txt
+
+      - name: Run Core API tests against the database
+        working-directory: services/core-api
+        env:
+          NIKAU_DB_TESTS: "1"
+        run: python -m pytest tests/db -v
