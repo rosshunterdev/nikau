@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from app.catalogue import nz_year, search_catalogue, to_prefilter_activity
 from app.prefilter import excluded_by
 
@@ -42,7 +44,15 @@ def test_a_mapped_row_is_excluded_by_its_schedule():
 def test_nz_year_is_a_plausible_year():
     assert 2026 <= nz_year() <= 2100
 
-    # --- search_catalogue ---
+    
+def test_nz_year_is_already_next_year_on_31_dec_at_11pm_utc():
+    # 31 Dec 23:00 UTC is midday on 1 Jan in NZ (summer time, UTC+13)
+    assert nz_year(datetime(2026, 12, 31, 23, 0, tzinfo=UTC)) == 2027
+
+
+def test_nz_year_matches_utc_mid_year():
+    assert nz_year(datetime(2026, 6, 15, 12, 0, tzinfo=UTC)) == 2026
+
 
 def make_row(name, **fields):
     row = {

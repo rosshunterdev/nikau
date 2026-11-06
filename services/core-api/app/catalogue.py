@@ -4,7 +4,7 @@ Shared by the catalogue search (SCRUM-86) and the match endpoint (SCRUM-87),
 so both judge an activity with exactly the same rules (app/prefilter.py).
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from app.prefilter import prefilter
@@ -34,10 +34,15 @@ def to_prefilter_activity(row: dict) -> dict:
     }
 
 
-def nz_year() -> int:
+def nz_year(now: datetime | None = None) -> int:
     """This year in New Zealand. The server runs on UTC, which is still
-    last year until 1 pm on 1 January in NZ."""
-    return datetime.now(ZoneInfo("Pacific/Auckland")).year
+    last year until 1 pm on 1 January in NZ.
+
+    `now` is only for tests, to pick the moment; the app leaves it out.
+    """
+    now = now or datetime.now(UTC)
+    return now.astimezone(ZoneInfo("Pacific/Auckland")).year
+
 
 def search_catalogue(
     rows: list[dict],
