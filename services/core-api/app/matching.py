@@ -5,6 +5,7 @@ Supabase or Gemini. The endpoint in routers/matching.py loads the data and calls
 Contract: docs/api-contract.md v0.4, "How a match runs".
 """
 
+import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -14,6 +15,8 @@ import httpx
 
 from app.catalogue import to_prefilter_activity
 from app.prefilter import prefilter
+
+logger = logging.getLogger(__name__)
 
 # D2: the most activities sent to AI Matching in one request
 SHORTLIST_MAX = 30
@@ -227,12 +230,18 @@ def call_ai_matching(
     try:
         data = reply.json()
     except ValueError:  # not JSON at all
+        logger.warning("AI Matching replied %s with a body that isn't JSON", reply.status_code)
         return MatchOutcome("error", elapsed())
 
     if reply.status_code != 200:
         code = (data.get("error") or {}).get("code") if isinstance(data, dict) else None
+        # Only the status and error code: never the body, which could hold client details
+        logger.warning(
+            "AI Matching replied %s (%s) for request %s",
+            reply.status_code, code, body.get("request_id"),
+        )
         return MatchOutcome("invalid_output" if code == "invalid_output" else "error", elapsed())
-
+    
     results = data.get("results") or []
     return MatchOutcome(
         "success" if results else "no_good_fit",
