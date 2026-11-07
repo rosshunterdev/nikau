@@ -3,8 +3,9 @@
 These sign in as the seed users and call the real API, so RLS and the database
 functions run for real. Start the database first, from the repo root:
     supabase start        (or `supabase db reset` for fresh seed data)
-Without it these tests are skipped. In CI (NIKAU_DB_TESTS=1) they fail instead,
-so a broken database setup can't pass as "skipped".
+Without it, or when SUPABASE_URL isn't localhost, these tests are skipped.
+In CI (NIKAU_DB_TESTS=1) they fail instead, so a broken database setup
+can't pass as "skipped".
 """
 
 import os
@@ -35,15 +36,20 @@ def database_is_up() -> bool:
         return False
 
 
+def skip_or_fail(reason: str):
+    """Skip locally; in CI (NIKAU_DB_TESTS=1) fail, so CI can't pass by skipping."""
+    if os.environ.get("NIKAU_DB_TESTS") == "1":
+        pytest.fail(reason)
+    pytest.skip(reason)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def test_database():
     """Run only against a local database: these tests create and delete rows."""
     if urlparse(settings.supabase_url).hostname not in ("127.0.0.1", "localhost"):
-        pytest.fail(f"Database tests only run against local Supabase, not {settings.supabase_url}")
+        skip_or_fail("SUPABASE_URL isn't local Supabase: database tests only run against localhost")
     if not database_is_up():
-        if os.environ.get("NIKAU_DB_TESTS") == "1":
-            pytest.fail("NIKAU_DB_TESTS=1 but local Supabase isn't running")
-        pytest.skip("Local Supabase isn't running: start it with `supabase start`")
+        skip_or_fail("Local Supabase isn't running: start it with `supabase start`")
 
 
 @pytest.fixture(scope="session")

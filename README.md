@@ -159,7 +159,7 @@ use `assert` for each check, and finish with a `raise notice '... all tests pass
 ```bash
 python -m pytest tests/db -v
 ```
-Without Supabase they're skipped, so `python -m pytest` still works anywhere. They only ever run against `localhost`, because they create and delete rows. In CI they run in the same `db-tests` workflow as the SQL tests.
+They're skipped when local Supabase isn't running, or when `services/core-api/.env` points somewhere other than `localhost`, so `python -m pytest` still works anywhere. They never run against a hosted database, because they create and delete rows. In CI they run in the same `db-tests` workflow as the SQL tests.
 
 If `supabase start` fails on Windows with "forbidden by its access permissions", Windows has reserved the port. In an Administrator PowerShell, run `net stop winnat` then `net start winnat`.
 

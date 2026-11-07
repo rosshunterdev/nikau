@@ -32,6 +32,9 @@ def test_will_cannot_remove_alexs_lead(api, headers):
     try:
         r = api.delete(f"/clients/{ALEX}/leads/{lead_id}", headers=headers("will"))
         assert r.status_code == 404
+        # ...and the lead is still there: a 404 alone would also pass if the delete went through
+        r = api.get(f"/clients/{ALEX}/leads", headers=headers("cora"))
+        assert lead_id in [lead["lead_id"] for lead in r.json()]
     finally:
         # Clean up, so the test can run again without a database reset
         api.delete(f"/clients/{ALEX}/leads/{lead_id}", headers=headers("cora"))
