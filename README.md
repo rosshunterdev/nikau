@@ -165,12 +165,12 @@ use `assert` for each check, and finish with a `raise notice '... all tests pass
 
 ### Writing migrations
 - Create one with `supabase migration new <name>`. Never edit a migration that has already been merged: add a new one.
-- **New database functions can't be run by anyone until you say so** (SCRUM-61 removed the default). Any function the app calls needs both lines at the end of its migration:
+- **Say who can run every new database function.** SCRUM-61 stopped new functions being runnable by `public` and `anon` (signed-out visitors). Supabase still lets signed-in users (`authenticated`) run them by default, but we don't rely on that default: any function the app calls ends its migration with both lines:
   ```sql
   revoke execute on function public.<name>(<args>) from public, anon;
   grant execute on function public.<name>(<args>) to authenticated;
   ```
-  Without the `grant`, the app gets "permission denied" when calling it. See `create_client_full` in `20261030135700_save_client_functions.sql` for an example.
+  The `revoke` makes sure signed-out visitors can't call it. The `grant` states in the migration itself that signed-in staff can, so it keeps working even if Supabase's default changes. See `create_client_full` in `20261030135700_save_client_functions.sql` for an example.
 - Add or update a test file in `supabase/db-tests/` for any new rule or function.
 
 
