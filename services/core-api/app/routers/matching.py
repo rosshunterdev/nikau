@@ -22,6 +22,11 @@ router = APIRouter(tags=["matching"])
 log = logging.getLogger(__name__)
 
 
+def save_match_log(db, row: dict) -> None:
+    """Save the matching_log row. A function of its own so tests can make it fail (SCRUM-122)."""
+    db.table("matching_log").insert(row, returning=ReturnMethod.minimal).execute()
+
+
 @router.post("/clients/{client_id}/match", response_model=FindActivitiesResponse)
 def find_activities(client_id: UUID, caller: CurrentCaller):
     """Find activities for a client with AI matching (SCRUM-87).
@@ -64,7 +69,7 @@ def find_activities(client_id: UUID, caller: CurrentCaller):
     # 4. Log it for RQ1. Saved leads point to this row, so if it isn't saved
     # the leads couldn't be saved either: show the fallback instead (SCRUM-106).
     try:
-        caller.db.table("matching_log").insert(log_row, returning=ReturnMethod.minimal).execute()
+        save_match_log(caller.db, log_row)
     except (APIError, httpx.HTTPError) as e:
         log.warning("matching_log insert failed for %s: %s", log_row["request_id"], e)
         reply = reply_when_log_failed(reply)
