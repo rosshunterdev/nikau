@@ -21,6 +21,7 @@ export default function FindActivities({ client, onSaved }: Props) {
   const [saveMessage, setSaveMessage] = useState<string>()
 
   const catalogueLink = `/activities?client=${client.client_id}&${clientFilters(client)}`
+  const noInterests = client.interests.length === 0
 
   async function find() {
     setFinding(true)
@@ -88,10 +89,19 @@ export default function FindActivities({ client, onSaved }: Props) {
         for each. Check the details with the provider before booking.
       </p>
 
-      <button type="button" onClick={find} disabled={finding}>
-        {finding ? 'Finding activities…' : match ? 'Find again' : 'Find activities'}
-      </button>
-      {finding && <p role="status">This can take up to 15 seconds.</p>}
+      {noInterests ? (
+        <div role="status">
+          <p>Add {client.preferred_name}'s interests above and save to get suggestions.</p>
+          <Link to={catalogueLink}>Search the catalogue for {client.preferred_name}</Link>
+        </div>
+      ) : (
+        <>
+          <button type="button" onClick={find} disabled={finding}>
+            {finding ? 'Finding activities...' : match ? 'Find again' : 'Find activities'}
+          </button>
+          {finding && <p role="status">This can take up to 15 seconds.</p>}
+        </>
+      )}
 
       {error && <p role="alert">{error}</p>}
 
