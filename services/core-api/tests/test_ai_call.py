@@ -76,3 +76,21 @@ def test_sends_the_service_key_and_body():
 
     call(check)
     assert seen == {"auth": "Bearer secret", "path": "/match"}
+
+
+def test_error_reply_is_logged_without_the_body(caplog):
+    call(lambda r: httpx.Response(
+        401, json={"request_id": "r1", "error": {"code": "unauthorized", "message": "secret detail"}}
+    ))
+    assert "401 (unauthorized) for request r1" in caplog.text
+    assert "secret detail" not in caplog.text
+
+
+def test_reply_that_is_not_json_is_logged(caplog):
+    call(lambda r: httpx.Response(500, text="Internal Server Error"))
+    assert "500 with a body that isn't JSON" in caplog.text
+
+
+def test_success_is_not_logged(caplog):
+    call(lambda r: httpx.Response(200, json={"request_id": "r1", "results": [RESULT]}))
+    assert caplog.text == ""

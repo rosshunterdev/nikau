@@ -116,3 +116,15 @@ def db_fails_with():
 def test_save_lead_maps_database_errors(db_fails_with, code, expected):
     db_fails_with(code)
     assert client.post(f"/clients/{SAM_ID}/leads", json=MANUAL).status_code == expected
+
+
+def test_unexpected_save_error_is_logged(db_fails_with, caplog):
+    db_fails_with("XX000")
+    client.post(f"/clients/{SAM_ID}/leads", json=MANUAL)
+    assert "XX000 db said no" in caplog.text
+
+
+def test_expected_save_error_is_not_logged(db_fails_with, caplog):
+    db_fails_with("23505")
+    client.post(f"/clients/{SAM_ID}/leads", json=MANUAL)
+    assert caplog.text == ""

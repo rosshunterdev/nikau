@@ -78,28 +78,36 @@ Open http://localhost:5173
 ```
 nikau/
 ├── .github/
-│   └── workflows/         # CI: frontend, core-api and ai-matching checks
+│   └── workflows/         # CI: frontend, core-api, ai-matching and database checks
+├── docs/                  # API contract, access rules, Gemini spike notes
+├── fixtures/              # Sample clients and activities for tests and the spike
 ├── supabase/
 │   ├── config.toml        # Local Supabase settings
 │   ├── migrations/        # Database schema, applied in timestamp order
 │   ├── db-tests/          # SQL tests for access rules and save functions (run in CI)
+│   ├── seeds/             # Activity catalogue test data (loaded after seed.sql)
 │   └── seed.sql           # Local test data only (never pushed to the hosted project)
 ├── services/
-│   ├── core-api/          # FastAPI service: clients, activities, auth, database access
+│   ├── core-api/          # FastAPI service: clients, activities, leads, matching, database access
 │   │   ├── app/
-│   │   │   └── main.py    # App entry point and routes
+│   │   │   ├── main.py    # App entry point
+│   │   │   ├── routers/   # One file of endpoints per area (clients, leads, matching...)
+│   │   │   └── schemas/   # Request and response shapes
 │   │   ├── tests/
+│   │   ├── .env.example   # Core API settings (copy to services/core-api/.env)
 │   │   └── requirements.txt
-│   └── ai-matching/       # FastAPI service: activity matching and explanations
+│   └── ai-matching/       # FastAPI service: ranks the shortlist with Gemini and explains why
+│       ├── ai_matching/   # Contract and Gemini call
 │       ├── app/
-│       │   └── main.py
+│       │   └── main.py    # App entry point
 │       ├── tests/
 │       └── requirements.txt
 ├── frontend/              # React + TypeScript app (Vite)
 │   ├── src/
 │   ├── public/
+│   ├── .env.example       # Frontend settings (copy to frontend/.env.local)
 │   └── package.json
-├── .env.example           # Template for environment variables (copy to .env)
+├── .env.example           # AI Matching settings (copy to .env in the repo root)
 ├── .gitignore
 └── README.md
 ```
@@ -162,6 +170,17 @@ python -m pytest tests/db -v
 They're skipped when local Supabase isn't running, or when `services/core-api/.env` points somewhere other than `localhost`, so `python -m pytest` still works anywhere. They never run against a hosted database, because they create and delete rows. In CI they run in the same `db-tests` workflow as the SQL tests.
 
 If `supabase start` fails on Windows with "forbidden by its access permissions", Windows has reserved the port. In an Administrator PowerShell, run `net stop winnat` then `net start winnat`.
+
+### Writing migrations
+- Create one with `supabase migration new <name>`. Never edit a migration that has already been merged: add a new one.
+- **Say who can run every new database function.** SCRUM-61 stopped new functions being runnable by `public` and `anon` (signed-out visitors). Supabase still lets signed-in users (`authenticated`) run them by default, but we don't rely on that default: any function the app calls ends its migration with both lines:
+  ```sql
+  revoke execute on function public.<name>(<args>) from public, anon;
+  grant execute on function public.<name>(<args>) to authenticated;
+  ```
+  The `revoke` makes sure signed-out visitors can't call it. The `grant` states in the migration itself that signed-in staff can, so it keeps working even if Supabase's default changes. See `create_client_full` in `20261030135700_save_client_functions.sql` for an example.
+- Add or update a test file in `supabase/db-tests/` for any new rule or function.
+
 
 ## Project management
 
