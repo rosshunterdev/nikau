@@ -64,3 +64,35 @@ def test_unknown_tag_saves_nothing(api, headers):
     # All or nothing: the client row itself must not have been saved either
     names = [c["preferred_name"] for c in api.get("/clients", headers=headers("cora")).json()]
     assert name not in names
+
+
+def test_second_pass_fields_are_saved_and_returned(api, headers):
+    body = {
+        **REQUIRED,
+        "preferred_name": new_name(),
+        "goals": ["Meet new people", "Get fitter"],
+        "sensory_notes": "Finds crowds hard",
+        "travel_range_minutes": 30,
+    }
+    r = api.post("/clients", json=body, headers=headers("cora"))
+    assert r.status_code == 201, r.text
+    client_id = r.json()["client_id"]
+
+    # Saved, and read back by GET
+    saved = api.get(f"/clients/{client_id}", headers=headers("cora")).json()
+    assert saved["goals"] == ["Meet new people", "Get fitter"]
+    assert saved["sensory_notes"] == "Finds crowds hard"
+    assert saved["travel_range_minutes"] == 30
+
+    # A 6th goal is refused before it reaches the database
+    six = {"goals": ["1", "2", "3", "4", "5", "6"]}
+    r = api.patch(f"/clients/{client_id}", json=six, headers=headers("cora"))
+    assert r.status_code == 422
+
+    # Clearing works: no goals, no notes
+    r = api.patch(
+        f"/clients/{client_id}", json={"goals": [], "sensory_notes": None}, headers=headers("cora")
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["goals"] == []
+    assert r.json()["sensory_notes"] is None

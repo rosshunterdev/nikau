@@ -8,11 +8,12 @@ from app.schemas.clients import ClientCreate, ClientDetail, ClientSummary, Clien
 
 router = APIRouter(tags=["clients"])
 
-# The client columns the core form uses
+# The client columns the form uses
 CLIENT_FIELDS = (
     "client_id, preferred_name, suburb_id, birth_year, support_needed, "
     "max_physical_demand, needs_step_free, max_sensory_load, sensory_hard_limit, "
-    "transport, max_cost, updated_at"
+    "transport, max_cost, goals, participation_notes, physical_notes, sensory_notes, "
+    "travel_range_minutes, updated_at"
 )
 
 
@@ -21,6 +22,7 @@ def to_detail(row: dict) -> dict:
     row["interests"] = [item["tag_id"] for item in row.pop("client_interests")]
     row["availability"] = row.pop("client_availability")
     row["transport"] = row["transport"] or []  # an empty list instead of nothing
+    row["goals"] = row["goals"] or []
     return row
 
 

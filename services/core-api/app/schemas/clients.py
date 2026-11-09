@@ -1,11 +1,25 @@
-"""Shapes of client data the API sends and receives (core fields only for now)."""
+"""Shapes of client data the API sends and receives."""
 
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, StringConstraints, field_validator
 
 from app.schemas.enums import ClientTransport, Day, Level, Slot, SupportNeeded
+
+# Second-pass fields (SCRUM-94). Limits match the database: up to 5 goals,
+# travel range above 0. Notes describe needs, not diagnoses (contract "Privacy boundary").
+Goal = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+Notes = Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)]
+NOTES_FIELDS = ("participation_notes", "physical_notes", "sensory_notes")
+
+
+def blank_to_none(value):
+    """An empty notes box means 'no notes', so it's saved as empty, not as ''."""
+    if isinstance(value, str) and not value.strip():
+        return None
+    return value
 
 
 class AvailabilitySlot(BaseModel):
@@ -38,6 +52,11 @@ class ClientDetail(BaseModel):
     sensory_hard_limit: bool = False
     transport: list[ClientTransport] = []
     max_cost: float | None = None
+    goals: list[str] = []
+    participation_notes: str | None = None
+    physical_notes: str | None = None
+    sensory_notes: str | None = None
+    travel_range_minutes: int | None = None
     interests: list[str] = []  # tag ids
     availability: list[AvailabilitySlot] = []
     updated_at: datetime
@@ -57,8 +76,15 @@ class ClientCreate(BaseModel):
     sensory_hard_limit: bool = False
     transport: list[ClientTransport] = []
     max_cost: float | None = Field(default=None, ge=0)
+    goals: list[Goal] = Field(default=[], max_length=5)
+    participation_notes: Notes | None = None
+    physical_notes: Notes | None = None
+    sensory_notes: Notes | None = None
+    travel_range_minutes: int | None = Field(default=None, gt=0)
     interests: list[UUID] = []  # tag ids
     availability: list[AvailabilitySlot] = []
+
+    _blank_notes = field_validator(*NOTES_FIELDS, mode="before")(blank_to_none)
 
 
 class ClientUpdate(BaseModel):
@@ -76,8 +102,15 @@ class ClientUpdate(BaseModel):
     sensory_hard_limit: bool | None = None
     transport: list[ClientTransport] | None = None
     max_cost: float | None = Field(None, ge=0)
+    goals: list[Goal] | None = Field(None, max_length=5)
+    participation_notes: Notes | None = None
+    physical_notes: Notes | None = None
+    sensory_notes: Notes | None = None
+    travel_range_minutes: int | None = Field(None, gt=0)
     interests: list[UUID] | None = None
     availability: list[AvailabilitySlot] | None = None
+
+    _blank_notes = field_validator(*NOTES_FIELDS, mode="before")(blank_to_none)
 
     @field_validator(
         "preferred_name", "support_needed", "max_physical_demand", "max_sensory_load"
