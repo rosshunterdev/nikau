@@ -51,6 +51,9 @@
   background: none;
   color: var(--text-secondary);
   cursor: pointer;
+  padding: 0;
+  display: grid;
+  place-items: center;
 }
 .signin-error { color: var(--error); margin: 16px 0 0; }
 .signin-submit {
