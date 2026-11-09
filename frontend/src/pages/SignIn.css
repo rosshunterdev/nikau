@@ -3,17 +3,17 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: #ffffff;
-  --primary: #092c4c;        /* Color - Primary */
-  --action: #0f6e74;         /* Sign in button teal: copy from Figma */
-  --text-secondary: #4b5563;
-  --placeholder: #6b7280;
-  --border: #767676;         /* color/border: copy from Figma */
-  --error: #b42318;
+  background: var(--sand);
+  --primary: var(--ink);       /* brand tokens from index.css (SCRUM-126) */
+  --action: var(--green);
+  --text-secondary: var(--muted);
+  --placeholder: var(--muted);
+  --border: var(--field-border);
 }
 .signin-card {
   width: 100%;
   max-width: 400px;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 24px;
@@ -22,7 +22,10 @@
   color: var(--primary);
   text-align: left;
 }
-.signin-brand { font-size: 32px; font-weight: 700; margin: 0 0 16px; }
+.signin-header { text-align: center; }
+.signin-brand { margin: 0 0 16px; }
+.signin-brand img { display: block; margin: 0 auto; }
+.signin-tereo { margin: 0 0 8px; color: var(--muted); font-weight: 600; }
 .signin-card h1 { font-size: 24px; margin: 0 0 4px; }
 .signin-sub { margin: 0 0 24px; }
 .signin-card label { font-weight: 600; margin: 16px 0 6px; }

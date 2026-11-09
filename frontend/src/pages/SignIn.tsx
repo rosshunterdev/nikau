@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import logo from '../assets/nikau-lockup-stacked.svg'
 import './SignIn.css'
 
 type Props = { notice?: string }
@@ -37,9 +38,14 @@ export default function SignIn({ notice }: Props) {
   return (
     <main className="signin">
       <form className="signin-card" onSubmit={handleSubmit} noValidate>
-        <p className="signin-brand">Nīkau</p>
+        <div className="signin-header">
+        <p className="signin-brand" lang="mi">
+          <img src={logo} alt="Nīkau" width={72} height={90} />
+        </p>
         <h1>Staff sign in</h1>
+        <p className="signin-tereo" lang="mi">Takiuru</p>
         <p className="signin-sub">Find community activities that fit your clients</p>
+      </div>
 
         <label htmlFor="email">Work email</label>
         <input
@@ -76,7 +82,7 @@ export default function SignIn({ notice }: Props) {
           {loading ? 'Signing in…' : 'Sign in'}
         </button>
 
-        <p className="signin-help">For a new account or a password reset, contact your admin.</p>
+        <p className="signin-help">For new accounts or a password reset, contact your administrator.</p>
       </form>
     </main>
   )
