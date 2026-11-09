@@ -7,14 +7,18 @@ begin;
 do $$
 declare
   t text;
+  p text;
 begin
   for t in select tablename from pg_tables where schemaname = 'public' loop
     -- RLS must be on, because the grants below open every table
     assert (select rowsecurity from pg_tables where schemaname = 'public' and tablename = t),
       format('%s has RLS turned off', t);
 
-    assert has_table_privilege('authenticated', format('public.%I', t), 'select, insert, update, delete'),
-      format('authenticated is missing a SELECT/INSERT/UPDATE/DELETE grant on %s', t);
+    -- One privilege at a time: with a list, has_table_privilege is true if ANY of them is held
+    foreach p in array array['select', 'insert', 'update', 'delete'] loop
+      assert has_table_privilege('authenticated', format('public.%I', t), p),
+        format('authenticated is missing %s on %s', upper(p), t);
+    end loop;
     assert not has_table_privilege('authenticated', format('public.%I', t), 'truncate'),
       format('authenticated can TRUNCATE %s', t);
     assert not has_table_privilege('anon', format('public.%I', t), 'select, insert, update, delete, truncate'),
