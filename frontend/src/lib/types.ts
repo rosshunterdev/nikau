@@ -27,6 +27,11 @@ export type ClientDetail = {
   sensory_hard_limit: boolean
   transport: string[]
   max_cost: number | null
+  goals: string[]
+  participation_notes: string | null
+  physical_notes: string | null
+  sensory_notes: string | null
+  travel_range_minutes: number | null
   interests: string[]
   availability: { day: Day; slot: Slot }[]
   updated_at: string

@@ -20,9 +20,18 @@ type FormState = {
   sensory_hard_limit: boolean
   transport: string[]
   max_cost: string
+  goals: string[]
+  participation_notes: string
+  physical_notes: string
+  sensory_notes: string
+  travel_range_minutes: string
   interests: string[]
   availability: string[]
 }
+
+// Second-pass fields (SCRUM-94)
+const MAX_GOALS = 5
+const NOTES_HINT = 'Describe what helps or gets in the way, not a diagnosis. No names or places.'
 
 const EMPTY: FormState = {
   preferred_name: '',
@@ -35,6 +44,11 @@ const EMPTY: FormState = {
   sensory_hard_limit: false,
   transport: [],
   max_cost: '',
+  goals: [],
+  participation_notes: '',
+  physical_notes: '',
+  sensory_notes: '',
+  travel_range_minutes: '',
   interests: [],
   availability: [],
 }
@@ -52,6 +66,11 @@ function toPayload(f: FormState) {
     sensory_hard_limit: f.sensory_hard_limit,
     transport: f.transport,
     max_cost: f.max_cost ? Number(f.max_cost) : null,
+    goals: f.goals.map((g) => g.trim()).filter((g) => g !== ''), // blank lines are dropped
+    participation_notes: f.participation_notes.trim() || null, // empty box = no notes
+    physical_notes: f.physical_notes.trim() || null,
+    sensory_notes: f.sensory_notes.trim() || null,
+    travel_range_minutes: f.travel_range_minutes ? Number(f.travel_range_minutes) : null,
     interests: f.interests,
     availability: f.availability.map((key) => {
       const [day, slot] = key.split('-')
@@ -73,6 +92,11 @@ function fromDetail(c: ClientDetail): FormState {
     sensory_hard_limit: c.sensory_hard_limit,
     transport: c.transport,
     max_cost: c.max_cost?.toString() ?? '',
+    goals: c.goals,
+    participation_notes: c.participation_notes ?? '',
+    physical_notes: c.physical_notes ?? '',
+    sensory_notes: c.sensory_notes ?? '',
+    travel_range_minutes: c.travel_range_minutes?.toString() ?? '',
     interests: c.interests,
     availability: c.availability.map((a) => `${a.day}-${a.slot}`),
   }
@@ -148,6 +172,17 @@ function ClientForm({ id }: { id?: string }) {
           }
         : f,
     )
+  }
+
+  // Goals: change, add or remove one line (up to MAX_GOALS)
+  function setGoal(index: number, text: string) {
+    setForm((f) => (f ? { ...f, goals: f.goals.map((g, i) => (i === index ? text : g)) } : f))
+  }
+  function addGoal() {
+    setForm((f) => (f && f.goals.length < MAX_GOALS ? { ...f, goals: [...f.goals, ''] } : f))
+  }
+  function removeGoal(index: number) {
+    setForm((f) => (f ? { ...f, goals: f.goals.filter((_, i) => i !== index) } : f))
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -238,6 +273,31 @@ function ClientForm({ id }: { id?: string }) {
         </label>
       </details>
 
+      {/* Goals (SCRUM-94): up to 5, in the client's own words */}
+      <details open={wide}>
+        <summary>Goals</summary>
+        <fieldset>
+          <legend>Their goals, in their own words where you can (up to {MAX_GOALS})</legend>
+          {/* The position is the key: each input's text always comes from form.goals */}
+          {form.goals.map((goal, i) => (
+            <div key={i}>
+              <label>
+                Goal {i + 1}
+                <input value={goal} maxLength={200} onChange={(e) => setGoal(i, e.target.value)} />
+              </label>
+              <button type="button" onClick={() => removeGoal(i)} aria-label={`Remove goal ${i + 1}`}>
+                Remove
+              </button>
+            </div>
+          ))}
+          {form.goals.length < MAX_GOALS && (
+            <button type="button" onClick={addGoal}>
+              Add goal
+            </button>
+          )}
+        </fieldset>
+      </details>
+
       {/* 2. Support and access */}
       <details open={wide}>
         <summary>Support and access</summary>
@@ -274,6 +334,17 @@ function ClientForm({ id }: { id?: string }) {
         </label>
 
         <label>
+          Physical notes
+          <textarea
+            rows={2}
+            maxLength={1000}
+            aria-describedby="notes-hint"
+            value={form.physical_notes}
+            onChange={(e) => set('physical_notes', e.target.value)}
+          />
+        </label>
+
+        <label>
           <input
             type="checkbox"
             checked={form.needs_step_free}
@@ -304,6 +375,30 @@ function ClientForm({ id }: { id?: string }) {
           />
           This is a hard limit (never suggest anything louder or busier)
         </label>
+
+        <label>
+          Sensory notes
+          <textarea
+            rows={2}
+            maxLength={1000}
+            aria-describedby="notes-hint"
+            value={form.sensory_notes}
+            onChange={(e) => set('sensory_notes', e.target.value)}
+          />
+        </label>
+
+        <label>
+          How they like to take part
+          <textarea
+            rows={2}
+            maxLength={1000}
+            aria-describedby="notes-hint"
+            value={form.participation_notes}
+            onChange={(e) => set('participation_notes', e.target.value)}
+          />
+        </label>
+
+        <p id="notes-hint">{NOTES_HINT}</p>
       </details>
 
       {/* 3. Getting there and cost */}
@@ -323,6 +418,18 @@ function ClientForm({ id }: { id?: string }) {
             </label>
           ))}
         </fieldset>
+
+        <label>
+          How far they can travel (minutes)
+          <input
+            type="number"
+            min={1}
+            value={form.travel_range_minutes}
+            onChange={(e) => set('travel_range_minutes', e.target.value)}
+            aria-describedby="travel-hint"
+          />
+        </label>
+        <p id="travel-hint">Not used for suggestions yet.</p>
 
         <label>
           Most they can pay per session ($)
