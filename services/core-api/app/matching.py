@@ -34,6 +34,10 @@ def to_prefilter_client(row: dict) -> dict:
         "transport": row.get("transport") or [],
     }
 
+def has_something_to_match(row: dict) -> bool:
+    """A client needs at least one interest or goal before matching (SCRUM-125)."""
+    return bool(row.get("client_interests")) or bool(row.get("goals"))
+
 
 def d2_order(client: dict, activity: dict) -> tuple:
     """Sort key for the D2 rule. Smaller sorts first:
