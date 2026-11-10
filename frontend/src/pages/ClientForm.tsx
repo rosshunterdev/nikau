@@ -426,8 +426,10 @@ function ClientForm({ id }: { id?: string }) {
             min={1}
             value={form.travel_range_minutes}
             onChange={(e) => set('travel_range_minutes', e.target.value)}
+            aria-describedby="travel-hint"
           />
         </label>
+        <p id="travel-hint">Not used for suggestions yet.</p>
 
         <label>
           Most they can pay per session ($)

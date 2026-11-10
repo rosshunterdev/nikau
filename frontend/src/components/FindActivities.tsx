@@ -92,7 +92,7 @@ export default function FindActivities({ client, onSaved }: Props) {
 
       {noInterests ? (
         <div role="status">
-          <p>Add {client.preferred_name}'s interests above and save to get suggestions.</p>
+          <p>Add {client.preferred_name}'s interests or goals above and save to get suggestions.</p>
           <Link to={catalogueLink}>Search the catalogue for {client.preferred_name}</Link>
         </div>
       ) : (
