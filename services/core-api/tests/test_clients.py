@@ -60,3 +60,47 @@ def test_update_with_only_some_fields_passes():
 def test_update_cannot_clear_a_required_field(field):
     with pytest.raises(ValidationError):
         ClientUpdate(**{field: None})
+
+
+# --- Second-pass fields (SCRUM-94) ---
+
+def test_create_with_the_second_pass_fields_passes():
+    body = ClientCreate(
+        **VALID,
+        goals=["  Meet new people  ", "Get fitter"],
+        participation_notes="Likes to watch first",
+        physical_notes="Walks about 15 min",
+        sensory_notes="Finds crowds hard",
+        travel_range_minutes=30,
+    )
+    assert body.goals == ["Meet new people", "Get fitter"]  # spaces trimmed
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"goals": ["1", "2", "3", "4", "5", "6"]},  # more than 5 goals
+        {"goals": ["   "]},  # a blank goal
+        {"goals": ["x" * 201]},  # a goal that's too long
+        {"travel_range_minutes": 0},
+        {"physical_notes": "x" * 1001},
+    ],
+)
+def test_second_pass_limits(change):
+    with pytest.raises(ValidationError):
+        ClientCreate(**VALID, **change)
+    with pytest.raises(ValidationError):
+        ClientUpdate(**change)
+
+
+def test_an_empty_notes_box_is_saved_as_empty():
+    assert ClientUpdate(sensory_notes="   ").sensory_notes is None
+
+
+def test_update_can_clear_the_second_pass_fields():
+    body = ClientUpdate(goals=[], physical_notes=None, travel_range_minutes=None)
+    assert body.model_dump(exclude_unset=True) == {
+        "goals": [],
+        "physical_notes": None,
+        "travel_range_minutes": None,
+    }
