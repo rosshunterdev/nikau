@@ -1,0 +1,61 @@
+-- SCRUM-100 tests: both save functions lock the row they edit, and the coordinator
+-- check still comes before the lock. Run after `supabase db reset`. Rolled back at the end.
+-- (Two saves at once can't be tested in one session; these check the lock is in place.)
+
+begin;
+
+-- 1. Both edit functions use "for update"
+do $$
+declare
+  f text;
+begin
+  foreach f in array array['update_client_full', 'update_activity_full'] loop
+    assert (
+      select pg_get_functiondef(p.oid) ilike '%for update%'
+      from pg_proc p
+      join pg_namespace s on s.oid = p.pronamespace
+      where s.nspname = 'public' and p.proname = f
+    ), format('1. %s does not lock the row (for update)', f);
+  end loop;
+end $$;
+
+-- Cora (coordinator)
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+do $$
+declare
+  pottery constant uuid := 'e0000000-0000-0000-0000-000000000001';
+  saved_name text;
+begin
+  -- 2. Cora can still edit an activity
+  perform public.update_activity_full(pottery, '{"name": "Pottery locked edit"}');
+  select name into saved_name from public.activities where activity_id = pottery;
+  assert saved_name = 'Pottery locked edit', format('2. name not saved: %s', saved_name);
+
+  -- 3. An activity that doesn't exist is still "not found"
+  begin
+    perform public.update_activity_full('00000000-0000-0000-0000-000000000000', '{"name": "Nope"}');
+    raise exception '3. Edited an activity that does not exist';
+  exception when no_data_found then
+    null;
+  end;
+end $$;
+
+-- Will (support worker)
+set local request.jwt.claims = '{"sub": "b0000000-0000-0000-0000-000000000002", "role": "authenticated"}';
+
+do $$
+begin
+  -- 4. Will gets "only coordinators", not "not found", now the lock only finds editable rows
+  begin
+    perform public.update_activity_full('e0000000-0000-0000-0000-000000000001', '{"name": "Nope"}');
+    raise exception '4. Will edited an activity';
+  exception when insufficient_privilege then
+    null;
+  end;
+
+  raise notice 'SCRUM-100: all tests passed';
+end $$;
+
+rollback;
