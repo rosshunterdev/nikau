@@ -82,7 +82,7 @@ export default function ClientList() {
                   Open profile
                 </Link>
                 <Link
-                  to={`/clients/${c.client_id}#find-activities`}
+                  to={`/clients/${c.client_id}/find`}
                   className="button button-primary"
                   aria-label={`Find activities for ${c.preferred_name}`}
                 >

@@ -1,11 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { api, ApiError } from '../lib/api'
-import { clientFilters } from '../lib/catalogueFilters'
 import { DAYS, LEVELS, SLOTS, SUPPORT_NEEDED, TRANSPORT } from '../lib/options'
 import type { ClientDetail, Suburb, Tag } from '../lib/types'
-import ClientLeads from '../components/ClientLeads'
-import FindActivities from '../components/FindActivities'
 import './ClientForm.css'
 
 // What the form holds while you type. Numbers stay as text until saving.
@@ -112,20 +109,16 @@ export default function ClientFormPage() {
 
 function ClientForm({ id }: { id?: string }) {
   const navigate = useNavigate()
-  const { hash } = useLocation()
 
   // Adding: start empty. Editing: null until the client has loaded.
   const [form, setForm] = useState<FormState | null>(id ? null : EMPTY)
 
-    // The client as last saved: the catalogue link uses this, not unsaved edits
+  // The client as last saved: the heading and breadcrumb use this, not unsaved edits
   const [saved, setSaved] = useState<ClientDetail>()
   const [suburbs, setSuburbs] = useState<Suburb[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [error, setError] = useState<string>()
   const [saving, setSaving] = useState(false)
-
-  // Goes up each time a lead is saved from Find activities, so the saved leads reload
-  const [leadsVersion, setLeadsVersion] = useState(0)
 
   // Wide screens start with every section open; phones show only the first
   const [wide] = useState(() => window.matchMedia('(min-width: 768px)').matches)
@@ -157,17 +150,7 @@ function ClientForm({ id }: { id?: string }) {
       )
   }, [id])
 
-    // Arriving from a card's "Find activities" (#find-activities): once the client has
-  // loaded and the section exists, scroll to it and move focus to its heading
-  useEffect(() => {
-    if (saved && hash === '#find-activities') {
-      const heading = document.getElementById('find-activities-heading')
-      heading?.scrollIntoView({ block: 'start' })
-      heading?.focus({ preventScroll: true })
-    }
-  }, [saved, hash])
-
-    // Change one field
+  // Change one field
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => (f ? { ...f, [key]: value } : f))
   }
@@ -204,11 +187,12 @@ function ClientForm({ id }: { id?: string }) {
     setError(undefined)
     try {
       // Adding → POST /clients. Editing → PATCH /clients/{id}
-      await api<ClientDetail>(id ? `/clients/${id}` : '/clients', {
+      const result = await api<ClientDetail>(id ? `/clients/${id}` : '/clients', {
         method: id ? 'PATCH' : 'POST',
         body: JSON.stringify(toPayload(form)),
       })
-      navigate('/clients')
+      // Back to the client's profile (SCRUM-117)
+      navigate(`/clients/${result.client_id}`)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Can't reach the server. Try again.")
     } finally {
@@ -231,36 +215,25 @@ function ClientForm({ id }: { id?: string }) {
   }
 
   return (
-        <>
-      {/* SCRUM-117: where you are, the client's name, and the ways to find activities */}
+    <>
+      {/* SCRUM-117: where you are, and which client you're editing */}
       <nav aria-label="Breadcrumb" className="breadcrumb">
         <ol>
           <li>
             <Link to="/clients">Clients</Link>
           </li>
-          <li aria-current="page">{saved?.preferred_name ?? 'Add client'}</li>
+          {id && saved && (
+            <li>
+              <Link to={`/clients/${id}`}>{saved.preferred_name}</Link>
+            </li>
+          )}
+          <li aria-current="page">{id ? 'Edit profile' : 'Add client'}</li>
         </ol>
       </nav>
 
-      <h1>{saved?.preferred_name ?? 'Add client'}</h1>
+      <h1>{id && saved ? `Edit profile: ${saved.preferred_name}` : 'Add client'}</h1>
 
-      {saved && (
-        <div className="profile-actions">
-          <a href="#find-activities" className="button button-primary">
-            Find activities
-          </a>
-          <Link
-            to={`/activities?client=${saved.client_id}&${clientFilters(saved)}`}
-            className="button button-outline"
-          >
-            Search the catalogue
-          </Link>
-        </div>
-      )}
-
-    <form onSubmit={handleSubmit}>
-      {id && <h2>Profile</h2>}
-
+      <form onSubmit={handleSubmit}>
       {/* 1. About: always open */}
       <details open>
         <summary>About</summary>
@@ -531,16 +504,15 @@ function ClientForm({ id }: { id?: string }) {
 
       {error && <p role="alert">{error}</p>}
 
-    <button type="submit" disabled={saving}>
-    {saving ? 'Saving…' : id ? 'Save changes' : 'Save client'}
-    </button>
-   </form>
-
-  {/* Find activities and saved leads: only for an existing client */}
-  {saved && (
-      <FindActivities client={saved} onSaved={() => setLeadsVersion((v) => v + 1)} />
-    )}
-    {id && <ClientLeads key={leadsVersion} clientId={id} />}
+      <div className="profile-actions">
+        <button type="submit" disabled={saving}>
+          {saving ? 'Saving…' : id ? 'Save changes' : 'Save client'}
+        </button>
+        <Link to={id ? `/clients/${id}` : '/clients'} className="button button-outline">
+          Cancel
+        </Link>
+      </div>
+      </form>
     </>
   )
 }
