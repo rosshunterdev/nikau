@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { api, ApiError } from '../lib/api'
 import { clientFilters } from '../lib/catalogueFilters'
 import { DAYS, LEVELS, SLOTS, SUPPORT_NEEDED, TRANSPORT } from '../lib/options'
 import type { ClientDetail, Suburb, Tag } from '../lib/types'
 import ClientLeads from '../components/ClientLeads'
 import FindActivities from '../components/FindActivities'
+import './ClientForm.css'
 
 // What the form holds while you type. Numbers stay as text until saving.
 // availability is stored as keys like "mon-morning" to make ticking easy.
@@ -111,6 +112,7 @@ export default function ClientFormPage() {
 
 function ClientForm({ id }: { id?: string }) {
   const navigate = useNavigate()
+  const { hash } = useLocation()
 
   // Adding: start empty. Editing: null until the client has loaded.
   const [form, setForm] = useState<FormState | null>(id ? null : EMPTY)
@@ -155,7 +157,17 @@ function ClientForm({ id }: { id?: string }) {
       )
   }, [id])
 
-  // Change one field
+    // Arriving from a card's "Find activities" (#find-activities): once the client has
+  // loaded and the section exists, scroll to it and move focus to its heading
+  useEffect(() => {
+    if (saved && hash === '#find-activities') {
+      const heading = document.getElementById('find-activities-heading')
+      heading?.scrollIntoView({ block: 'start' })
+      heading?.focus({ preventScroll: true })
+    }
+  }, [saved, hash])
+
+    // Change one field
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => (f ? { ...f, [key]: value } : f))
   }
@@ -219,15 +231,35 @@ function ClientForm({ id }: { id?: string }) {
   }
 
   return (
-    <>
-    <form onSubmit={handleSubmit}>
-       <h1>{id ? 'Edit client' : 'Add client'}</h1>
-      <Link to="/clients">Back to clients</Link>
-            {saved && (
-        <Link to={`/activities?client=${saved.client_id}&${clientFilters(saved)}`}>
-          Find activities in catalogue for {saved.preferred_name}
-        </Link>
+        <>
+      {/* SCRUM-117: where you are, the client's name, and the ways to find activities */}
+      <nav aria-label="Breadcrumb" className="breadcrumb">
+        <ol>
+          <li>
+            <Link to="/clients">Clients</Link>
+          </li>
+          <li aria-current="page">{saved?.preferred_name ?? 'Add client'}</li>
+        </ol>
+      </nav>
+
+      <h1>{saved?.preferred_name ?? 'Add client'}</h1>
+
+      {saved && (
+        <div className="profile-actions">
+          <a href="#find-activities" className="button button-primary">
+            Find activities
+          </a>
+          <Link
+            to={`/activities?client=${saved.client_id}&${clientFilters(saved)}`}
+            className="button button-outline"
+          >
+            Search the catalogue
+          </Link>
+        </div>
       )}
+
+    <form onSubmit={handleSubmit}>
+      {id && <h2>Profile</h2>}
 
       {/* 1. About: always open */}
       <details open>

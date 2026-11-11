@@ -83,8 +83,11 @@ export default function FindActivities({ client, onSaved }: Props) {
   }
 
   return (
-    <section aria-labelledby="find-activities-heading">
-      <h2 id="find-activities-heading">Find activities</h2>
+    <section id="find-activities" aria-labelledby="find-activities-heading">
+      {/* tabIndex -1: the page can move focus here when you arrive from "Find activities" */}
+      <h2 id="find-activities-heading" tabIndex={-1}>
+        Find activities
+      </h2>
       <p>
         Suggestions for {client.preferred_name} from the activity catalogue, with the reasons
         for each. Check the details with the provider before booking.

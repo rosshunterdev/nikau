@@ -64,6 +64,15 @@
   color: var(--muted);
 }
 
-.client-card .button {
+/* Open profile and Find activities side by side, lined up across cards */
+.client-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
   margin-top: auto; /* keeps buttons lined up when cards differ in height */
+}
+
+.client-card-actions .button {
+  justify-content: center;
+  text-align: center;
 }

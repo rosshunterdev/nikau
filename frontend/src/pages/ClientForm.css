@@ -1,0 +1,40 @@
+/* SCRUM-117: client page header */
+
+/* "Clients / Sam" trail above the name */
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+/* The "/" between steps is drawn by CSS, so screen readers don't read it */
+.breadcrumb li + li::before {
+  content: "/";
+  margin-right: 8px;
+  color: var(--muted);
+}
+
+/* Find activities and Search the catalogue side by side, with a gap */
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+/* The heading gets focus when you arrive from "Find activities"; it isn't
+   something you click, so it doesn't need a focus ring */
+#find-activities-heading:focus {
+  outline: none;
+}
+
+/* Space between the form, Find activities and Saved leads */
+#find-activities,
+#find-activities + section {
+  margin-top: 48px;
+}
