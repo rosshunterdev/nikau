@@ -45,7 +45,7 @@ def find_activities(client_id: UUID, caller: CurrentCaller):
     if client_row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Client not found")
 
-    # 2. Nothing to match on: stop before the AI call and the log (SCRUM-125).   # ← b (new block)
+    # 2. Nothing to match on: stop before the AI call and the log (SCRUM-125).
     # The app already hides the button; this also covers direct API calls.
     if not has_something_to_match(client_row):
         raise HTTPException(
