@@ -4,18 +4,22 @@
 
 begin;
 
--- 1. Both edit functions use "for update"
+-- 1. Both edit functions lock the row they load ("for update" on the select itself,
+-- not just in a comment)
 do $$
 declare
-  f text;
+  pair text[];
 begin
-  foreach f in array array['update_client_full', 'update_activity_full'] loop
+  foreach pair slice 1 in array array[
+    ['update_client_full', 'where client_id = p_client_id for update'],
+    ['update_activity_full', 'where activity_id = p_activity_id for update']
+  ] loop
     assert (
-      select pg_get_functiondef(p.oid) ilike '%for update%'
+      select pg_get_functiondef(p.oid) ilike '%' || pair[2] || '%'
       from pg_proc p
       join pg_namespace s on s.oid = p.pronamespace
-      where s.nspname = 'public' and p.proname = f
-    ), format('1. %s does not lock the row (for update)', f);
+      where s.nspname = 'public' and p.proname = pair[1]
+    ), format('1. %s does not lock the row (%s)', pair[1], pair[2]);
   end loop;
 end $$;
 
