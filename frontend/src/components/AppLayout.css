@@ -1,12 +1,12 @@
+/* Older names, pointed at the brand tokens in index.css (SCRUM-126) */
 :root {
-  --navy: #0f2c4c;
-  --teal: #0a6e75;
-  --teal-tint: #eaf4f5;
-  --border: #d0d5dd;
-  --muted: #5f6b7a;
-  --avatar-bg: #e4e7ec;
-  --peach: #fde2d8;
-  --card-border: #98a2b3;
+  --navy: var(--ink);
+  --teal: var(--green);
+  --teal-tint: var(--mint);
+  --border: var(--card-edge);
+  --avatar-bg: var(--paper);
+  --peach: var(--paper);
+  --card-border: var(--card-edge);
 }
 
 .app {
