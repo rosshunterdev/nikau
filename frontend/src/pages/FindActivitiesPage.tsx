@@ -5,8 +5,9 @@ import type { ClientDetail } from '../lib/types'
 import FindActivities from '../components/FindActivities'
 import './ClientForm.css'
 
-// SCRUM-117: Find activities on its own page. SCRUM-91 adds running on arrival
-// and the loading, no-good-fit and matching-unavailable states (hi-fi 05–07).
+// SCRUM-117 / SCRUM-91: Find activities on its own page. Matching starts as soon as
+// the client has loaded; the component shows loading, suggestions (05),
+// matching unavailable (06) and no good fit (07).
 export default function FindActivitiesPage() {
   const { id } = useParams()
   const [client, setClient] = useState<ClientDetail>()
@@ -48,9 +49,13 @@ export default function FindActivitiesPage() {
         </ol>
       </nav>
 
-      <h1>Find activities for {client.preferred_name}</h1>
+      <h1 className="find-title">
+        Find activities for {client.preferred_name}
+        <span lang="mi">Rapu ngohe</span>
+      </h1>
 
-      <FindActivities client={client} onSaved={() => {}} />
+      {/* key: a different client gets a fresh search */}
+      <FindActivities key={client.client_id} client={client} />
     </>
   )
 }
