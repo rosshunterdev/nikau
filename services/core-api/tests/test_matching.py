@@ -1,4 +1,12 @@
-from app.matching import SHORTLIST_MAX, build_shortlist, d2_order, to_prefilter_client
+import pytest
+
+from app.matching import (
+    SHORTLIST_MAX,
+    build_shortlist,
+    d2_order,
+    has_something_to_match,
+    to_prefilter_client,
+)
 
 
 def activity(activity_id, **fields):
@@ -94,3 +102,20 @@ def test_shortlist_keeps_the_best_30():
 
 def test_empty_shortlist_when_nothing_passes():
     assert build_shortlist(CLIENT, [activity("x", consent_given=False)], 2026) == []
+  
+
+# --- has_something_to_match (SCRUM-125) ---
+
+@pytest.mark.parametrize(
+    ("interests", "goals", "expected"),
+    [
+        ([{"tag_id": "art"}], [], True),  # interests only
+        ([], ["Meet new people"], True),  # goals only
+        ([{"tag_id": "art"}], ["Meet new people"], True),  # both
+        ([], [], False),  # neither
+        ([], None, False),  # goals never saved
+    ],
+)
+def test_client_needs_an_interest_or_a_goal(interests, goals, expected):
+    row = {"client_interests": interests, "goals": goals}
+    assert has_something_to_match(row) is expected

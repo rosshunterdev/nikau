@@ -3,6 +3,8 @@
 AI Matching is faked (no Gemini in tests); the client, catalogue and RLS are real.
 """
 
+from uuid import uuid4
+
 import pytest
 from postgrest.exceptions import APIError
 
@@ -45,3 +47,26 @@ def test_fallback_when_the_log_cant_be_saved(api, headers, fake_ai, monkeypatch)
     # Leads without a receipt couldn't be saved, so none are shown
     assert r.json()["result"] == "error"
     assert r.json()["leads"] == []
+
+
+def must_not_run(*args, **kwargs):
+    raise AssertionError("matching ran for a client with nothing to match on")
+
+
+def test_client_with_no_interests_or_goals_is_refused(api, headers, monkeypatch):
+    # SCRUM-125: no AI call and no log row, just a clear message
+    monkeypatch.setattr(matching, "call_ai_matching", must_not_run)
+    monkeypatch.setattr(matching, "save_match_log", must_not_run)
+
+    body = {
+        "preferred_name": f"No interests {uuid4().hex[:8]}",
+        "support_needed": "worker_present",
+        "max_physical_demand": "low",
+        "max_sensory_load": "medium",
+    }
+    r = api.post("/clients", json=body, headers=headers("cora"))
+    assert r.status_code == 201, r.text
+
+    r = api.post(f"/clients/{r.json()['client_id']}/match", headers=headers("cora"))
+    assert r.status_code == 400, r.text
+    assert "interests or goals" in r.json()["detail"]
