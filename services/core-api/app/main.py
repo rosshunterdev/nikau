@@ -3,7 +3,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import activities, clients, leads, lookups, matching, me, providers
+from app.routers import (
+    activities,
+    clients,
+    leads,
+    lookups,
+    matching,
+    matching_log,
+    me,
+    providers,
+)
 
 app = FastAPI(title="Nikau Core API")
 
@@ -23,6 +32,7 @@ app.include_router(providers.router)
 app.include_router(activities.router)
 app.include_router(leads.router)
 app.include_router(matching.router)
+app.include_router(matching_log.router)
 
 
 @app.get("/health")

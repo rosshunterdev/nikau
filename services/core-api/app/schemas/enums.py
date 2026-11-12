@@ -12,3 +12,7 @@ Slot = Literal["morning", "afternoon", "evening"]
 ActivityTransport = Literal["bus_route", "mobility_parking", "door_drop_off"]
 SupportWorkerPolicy = Literal["attend_free", "attend_with_charge", "not_allowed"]
 LeadSource = Literal["ai_match", "manual_search"]
+MatchCallType = Literal["http", "direct"]
+MatchResult = Literal[
+    "success", "timeout", "error", "invalid_output", "no_candidates", "no_good_fit"
+]
