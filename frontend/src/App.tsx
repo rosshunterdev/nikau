@@ -11,6 +11,7 @@ import ProviderForm from './pages/ProviderForm'
 import ActivityList from './pages/ActivityList'
 import ActivityForm from './pages/ActivityForm'
 import SavedLeads from './pages/SavedLeads'
+import MatchingLog from './pages/MatchingLog'
 
 type Profile = {
   user_id: string
@@ -118,7 +119,7 @@ export default function App() {
             path="/matching-log"
             element={
               currentProfile.role === 'coordinator'
-                ? <p>Matching log is coming soon.</p>
+                ? <MatchingLog/>
                 : <p>Page not found.</p>
             }
           />

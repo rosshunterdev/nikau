@@ -129,3 +129,17 @@ export type FindActivitiesResponse = {
   message: string | null // set when the screen should fall back to the catalogue
   leads: MatchLead[]
 }
+
+export type MatchingLogEntry = {
+  request_id: string
+  requested_at: string
+  result: MatchResult
+  fallback_shown: boolean
+  called_as: 'http' | 'direct' | null
+  response_ms: number | null
+  candidate_count: number | null
+  leads_shown: number | null
+  model_ms: number | null
+  dropped_count: number | null
+  requested_by_name: string | null
+}

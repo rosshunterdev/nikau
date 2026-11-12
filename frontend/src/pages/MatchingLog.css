@@ -1,0 +1,57 @@
+.log-table-wrap {
+    overflow-x: auto;
+}
+
+.log-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.log-table th,
+.log-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.log-table th {
+    color:var(--muted);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.log-table td {
+    font-size: 14px;
+}
+
+@media (max-width: 640px) {
+    .log-table tr {
+        display: block;
+        padding: 12px;
+        margin-bottom: 16px;
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+    }
+
+    .log-table td {
+        display: block;
+        border-bottom: none;
+    }
+
+    .log-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .log-table td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+    }
+}
