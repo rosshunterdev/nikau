@@ -230,10 +230,12 @@ export default function CatalogueFilters({ params, onSearch }: Props) {
         </fieldset>
       </details>
  
-      <button type="submit">Search</button>
-      <button type="button" onClick={handleClear}>
-        Clear filters
-      </button>
+      <div className="button-row">
+        <button type="submit">Search</button>
+        <button type="button" onClick={handleClear}>
+          Clear filters
+        </button>
+      </div>
     </form>
   )
 }
