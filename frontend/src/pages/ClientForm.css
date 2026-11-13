@@ -26,3 +26,12 @@
   gap: 12px;
   margin: 0 0 24px;
 }
+
+
+/* Find activities page title with its te reo name underneath (SCRUM-91) */
+.find-title span {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.1rem;
+  color: var(--muted);
+}
