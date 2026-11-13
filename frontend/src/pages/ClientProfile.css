@@ -1,0 +1,149 @@
+/* SCRUM-117: client profile (hi-fi screen 03) */
+
+/* Avatar, name and the two actions on one row; the actions wrap under on narrow screens */
+.profile-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--card);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.profile-title {
+  flex: 1;
+  min-width: 200px;
+}
+
+.profile-title h1 {
+  margin: 0;
+}
+
+.profile-meta {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+/* Here the actions sit in the header, so no bottom margin */
+.profile-header .profile-actions {
+  margin: 0;
+}
+
+/* Two columns on wide screens: goals, interests, taking part | access and support needs */
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 40px;
+}
+
+.profile-column {
+  display: grid;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profile-card {
+  padding: 20px 24px;
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
+}
+
+.profile-card p {
+  margin: 0;
+}
+
+/* Small capitals heading with the te reo name underneath */
+.profile-card-heading {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.profile-card-heading span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  letter-spacing: normal;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.profile-empty {
+  color: var(--muted);
+}
+
+.profile-goals {
+  margin: 0;
+  padding-left: 1.4em;
+  display: grid;
+  gap: 8px;
+}
+
+/* Interests as chips */
+.profile-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-chips li {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+/* Access and support needs: label on the left, value on the right, a line between rows */
+.profile-needs {
+  margin: 0;
+}
+
+.profile-needs > div {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--card-edge);
+}
+
+.profile-needs > div:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.profile-needs dt {
+  font-weight: 700;
+}
+
+.profile-needs dd {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+
+/* Notes under a value, e.g. "Walks about 15 min" */
+.profile-note {
+  color: var(--muted);
+}

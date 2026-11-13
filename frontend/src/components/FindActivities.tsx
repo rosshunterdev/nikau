@@ -83,7 +83,7 @@ export default function FindActivities({ client, onSaved }: Props) {
   }
 
   return (
-    <section aria-labelledby="find-activities-heading">
+        <section aria-labelledby="find-activities-heading">
       <h2 id="find-activities-heading">Find activities</h2>
       <p>
         Suggestions for {client.preferred_name} from the activity catalogue, with the reasons

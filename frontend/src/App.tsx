@@ -5,6 +5,8 @@ import SignIn from './pages/SignIn'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import ClientList from './pages/ClientList'
 import ClientForm from './pages/ClientForm'
+import ClientProfile from './pages/ClientProfile'
+import FindActivitiesPage from './pages/FindActivitiesPage'
 import AppLayout from './components/AppLayout'
 import ProviderList from './pages/ProviderList'
 import ProviderForm from './pages/ProviderForm'
@@ -92,7 +94,9 @@ export default function App() {
           <Route path="/" element={<Navigate to="/clients" replace />} />
           <Route path="/clients" element={<ClientList />} />
           <Route path="/clients/new" element={<ClientForm />} />
-          <Route path="/clients/:id" element={<ClientForm />} />
+          <Route path="/clients/:id" element={<ClientProfile />} />
+          <Route path="/clients/:id/edit" element={<ClientForm />} />
+          <Route path="/clients/:id/find" element={<FindActivitiesPage />} />
           <Route path="/activities" element={<ActivityList />} />
           <Route path="/activities/new" element={<ActivityForm />} />
           <Route path="/activities/:id" element={<ActivityForm />} />

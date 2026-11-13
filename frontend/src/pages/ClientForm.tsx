@@ -1,11 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { api, ApiError } from '../lib/api'
-import { clientFilters } from '../lib/catalogueFilters'
 import { DAYS, LEVELS, SLOTS, SUPPORT_NEEDED, TRANSPORT } from '../lib/options'
 import type { ClientDetail, Suburb, Tag } from '../lib/types'
-import ClientLeads from '../components/ClientLeads'
-import FindActivities from '../components/FindActivities'
+import './ClientForm.css'
 
 // What the form holds while you type. Numbers stay as text until saving.
 // availability is stored as keys like "mon-morning" to make ticking easy.
@@ -115,15 +113,12 @@ function ClientForm({ id }: { id?: string }) {
   // Adding: start empty. Editing: null until the client has loaded.
   const [form, setForm] = useState<FormState | null>(id ? null : EMPTY)
 
-    // The client as last saved: the catalogue link uses this, not unsaved edits
+  // The client as last saved: the heading and breadcrumb use this, not unsaved edits
   const [saved, setSaved] = useState<ClientDetail>()
   const [suburbs, setSuburbs] = useState<Suburb[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [error, setError] = useState<string>()
   const [saving, setSaving] = useState(false)
-
-  // Goes up each time a lead is saved from Find activities, so the saved leads reload
-  const [leadsVersion, setLeadsVersion] = useState(0)
 
   // Wide screens start with every section open; phones show only the first
   const [wide] = useState(() => window.matchMedia('(min-width: 768px)').matches)
@@ -192,11 +187,12 @@ function ClientForm({ id }: { id?: string }) {
     setError(undefined)
     try {
       // Adding → POST /clients. Editing → PATCH /clients/{id}
-      await api<ClientDetail>(id ? `/clients/${id}` : '/clients', {
+      const result = await api<ClientDetail>(id ? `/clients/${id}` : '/clients', {
         method: id ? 'PATCH' : 'POST',
         body: JSON.stringify(toPayload(form)),
       })
-      navigate('/clients')
+      // Back to the client's profile (SCRUM-117)
+      navigate(`/clients/${result.client_id}`)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Can't reach the server. Try again.")
     } finally {
@@ -220,15 +216,24 @@ function ClientForm({ id }: { id?: string }) {
 
   return (
     <>
-    <form onSubmit={handleSubmit}>
-       <h1>{id ? 'Edit client' : 'Add client'}</h1>
-      <Link to="/clients">Back to clients</Link>
-            {saved && (
-        <Link to={`/activities?client=${saved.client_id}&${clientFilters(saved)}`}>
-          Find activities in catalogue for {saved.preferred_name}
-        </Link>
-      )}
+      {/* SCRUM-117: where you are, and which client you're editing */}
+      <nav aria-label="Breadcrumb" className="breadcrumb">
+        <ol>
+          <li>
+            <Link to="/clients">Clients</Link>
+          </li>
+          {id && saved && (
+            <li>
+              <Link to={`/clients/${id}`}>{saved.preferred_name}</Link>
+            </li>
+          )}
+          <li aria-current="page">{id ? 'Edit profile' : 'Add client'}</li>
+        </ol>
+      </nav>
 
+      <h1>{id && saved ? `Edit profile: ${saved.preferred_name}` : 'Add client'}</h1>
+
+      <form onSubmit={handleSubmit}>
       {/* 1. About: always open */}
       <details open>
         <summary>About</summary>
@@ -499,16 +504,15 @@ function ClientForm({ id }: { id?: string }) {
 
       {error && <p role="alert">{error}</p>}
 
-    <button type="submit" disabled={saving}>
-    {saving ? 'Saving…' : id ? 'Save changes' : 'Save client'}
-    </button>
-   </form>
-
-  {/* Find activities and saved leads: only for an existing client */}
-  {saved && (
-      <FindActivities client={saved} onSaved={() => setLeadsVersion((v) => v + 1)} />
-    )}
-    {id && <ClientLeads key={leadsVersion} clientId={id} />}
+      <div className="profile-actions">
+        <button type="submit" disabled={saving}>
+          {saving ? 'Saving…' : id ? 'Save changes' : 'Save client'}
+        </button>
+        <Link to={id ? `/clients/${id}` : '/clients'} className="button button-outline">
+          Cancel
+        </Link>
+      </div>
+      </form>
     </>
   )
 }

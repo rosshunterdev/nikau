@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { Plus } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import type { ClientSummary } from '../lib/types'
 import './ClientList.css'
+
 
 // Show a date like "18 Oct 2026"
 function formatDate(iso: string) {
@@ -71,13 +72,24 @@ export default function ClientList() {
 
               <p className="client-meta">Updated {formatDate(c.updated_at)}</p>
 
-              <Link
-                to={`/clients/${c.client_id}`}
-                className="button button-soft"
-                aria-label={`Edit ${c.preferred_name}`}
-              >
-                Edit
-              </Link>
+                            {/* SCRUM-117: two clear ways in, like the hi-fi */}
+              <div className="client-card-actions">
+                <Link
+                  to={`/clients/${c.client_id}`}
+                  className="button button-soft"
+                  aria-label={`Open profile: ${c.preferred_name}`}
+                >
+                  Open profile
+                </Link>
+                <Link
+                  to={`/clients/${c.client_id}/find`}
+                  className="button button-primary"
+                  aria-label={`Find activities for ${c.preferred_name}`}
+                >
+                  <Search size={18} aria-hidden="true" />
+                  Find activities
+                </Link>
+              </div>
             </li>
           ))}
         </ul>

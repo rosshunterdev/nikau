@@ -184,6 +184,18 @@
   cursor: pointer;
 }
 
+/* Main action, for links (a link's own colour would otherwise hide the white text) */
+.button-primary {
+  background: var(--green);
+  color: #fff;
+  border: 1px solid var(--green);
+}
+
+.button-primary:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
 .button-outline {
   background: #fff;
   color: var(--navy);
