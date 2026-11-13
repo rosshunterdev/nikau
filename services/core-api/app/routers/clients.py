@@ -31,7 +31,7 @@ def list_clients(caller: CurrentCaller):
     """Clients you're allowed to see (RLS decides), A to Z."""
     res = (
         caller.db.table("clients")
-        .select("client_id, preferred_name, updated_at, suburbs(name)")
+        .select("client_id, preferred_name, updated_at, goals, suburbs(name)")
         .order("preferred_name")
         .execute()
     )
@@ -39,7 +39,8 @@ def list_clients(caller: CurrentCaller):
     clients = []
     for row in res.data:
         suburb = row.pop("suburbs") or {}  # no suburb set yet = empty
-        clients.append({**row, "suburb_name": suburb.get("name")})
+        goals = row.pop("goals") or []  # the card shows how many, not the goals themselves
+        clients.append({**row, "suburb_name": suburb.get("name"), "goal_count": len(goals)})
     return clients
 
 

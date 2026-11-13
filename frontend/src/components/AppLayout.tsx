@@ -1,7 +1,10 @@
-import { NavLink, Outlet } from "react-router";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router";
 import type { LucideIcon } from "lucide-react";
 import { Users, SquareActivity, Building2, Bookmark, ScrollText } from "lucide-react";
 import "./AppLayout.css";
+import logo from "../assets/nikau-lockup.svg";
+import { api } from "../lib/api";
 
 type Role = "support_worker" | "coordinator";
 
@@ -42,6 +45,16 @@ function initials(name: string) {
 
 export default function AppLayout({ name, role, onSignOut }: Props) {
   const links = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(role));
+  const { pathname } = useLocation();
+  const [leadCount, setLeadCount] = useState<number>();
+
+  // Saved leads count for the badge. Reloads on every page change, so it's
+  // right after saving or removing a lead. If it fails, there's just no badge.
+  useEffect(() => {
+    api<unknown[]>("/leads")
+      .then((leads) => setLeadCount(leads.length))
+      .catch(() => setLeadCount(undefined));
+  }, [pathname]);
 
   return (
     <div className="app">
@@ -51,7 +64,7 @@ export default function AppLayout({ name, role, onSignOut }: Props) {
 
       <aside className="sidebar">
         <NavLink to="/clients" className="sidebar-logo">
-          Nīkau
+          <img src={logo} alt="Nīkau" width={115} height={48} />
         </NavLink>
 
         <nav className="sidebar-nav" aria-label="Main">
@@ -61,6 +74,14 @@ export default function AppLayout({ name, role, onSignOut }: Props) {
                 <NavLink to={to} className="sidebar-link">
                   <Icon size={20} aria-hidden="true" />
                   {label}
+                  {to === "/leads" && leadCount ? (
+                    <>
+                      <span className="nav-badge" aria-hidden="true">
+                        {leadCount}
+                      </span>
+                      <span className="visually-hidden">, {leadCount} saved</span>
+                    </>
+                  ) : null}
                 </NavLink>
               </li>
             ))}
@@ -73,6 +94,9 @@ export default function AppLayout({ name, role, onSignOut }: Props) {
               {initials(name)}
             </span>
             <span>
+              <span className="sidebar-greeting" lang="mi">
+                Kia ora,
+              </span>
               <span className="sidebar-name">{name}</span>
               <span className="sidebar-role">{ROLE_LABEL[role]}</span>
             </span>

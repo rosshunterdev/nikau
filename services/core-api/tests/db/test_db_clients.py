@@ -96,3 +96,18 @@ def test_second_pass_fields_are_saved_and_returned(api, headers):
     assert r.status_code == 200, r.text
     assert r.json()["goals"] == []
     assert r.json()["sensory_notes"] is None
+
+
+def test_client_list_counts_goals(api, headers):
+    # SCRUM-129: the card shows "2 goals", so the list sends the count
+    with_goals = {**REQUIRED, "preferred_name": new_name(), "goals": ["Meet people", "Get fitter"]}
+    without_goals = {**REQUIRED, "preferred_name": new_name()}
+    ids = {}
+    for body in (with_goals, without_goals):
+        r = api.post("/clients", json=body, headers=headers("cora"))
+        assert r.status_code == 201, r.text
+        ids[body["preferred_name"]] = r.json()["client_id"]
+
+    listed = {c["client_id"]: c for c in api.get("/clients", headers=headers("cora")).json()}
+    assert listed[ids[with_goals["preferred_name"]]]["goal_count"] == 2
+    assert listed[ids[without_goals["preferred_name"]]]["goal_count"] == 0
