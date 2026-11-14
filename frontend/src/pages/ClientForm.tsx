@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { Plus, X } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import { DAYS, LEVELS, SLOTS, SUPPORT_NEEDED, TRANSPORT } from '../lib/options'
 import type { ClientDetail, Suburb, Tag } from '../lib/types'
@@ -30,6 +31,37 @@ type FormState = {
 // Second-pass fields (SCRUM-94)
 const MAX_GOALS = 5
 const NOTES_HINT = 'Describe what helps or gets in the way, not a diagnosis. No names or places.'
+
+// SCRUM-129: one part of the form. On wide screens it's an open card with a heading,
+// like hi-fi 04, so nothing (including required fields) is hidden. On phones it's a
+// section you can open and close, with only the first one open to start.
+function FormSection(props: {
+  id: string
+  title: string
+  mi?: string // te reo name under the heading
+  wide: boolean
+  startOpen?: boolean // phones only
+  children: ReactNode
+}) {
+  const { id, title, mi, wide, startOpen, children } = props
+  if (!wide) {
+    return (
+      <details className="form-card" open={startOpen}>
+        <summary>{title}</summary>
+        {children}
+      </details>
+    )
+  }
+  return (
+    <section className="form-card" aria-labelledby={id}>
+      <h2 id={id} className="form-card-heading">
+        {title}
+        {mi && <span lang="mi">{mi}</span>}
+      </h2>
+      {children}
+    </section>
+  )
+}
 
 const EMPTY: FormState = {
   preferred_name: '',
@@ -203,6 +235,11 @@ function ClientForm({ id }: { id?: string }) {
   // Suburbs grouped by council (Wellington City, Hutt City...) for the dropdown
   const councils = [...new Set(suburbs.map((s) => s.territorial_authority))].sort()
 
+  // "Sam's" / "Sam" in the labels when editing; "their" / "they" when adding
+  const name = saved?.preferred_name
+  const who = name ? `${name}'s` : 'their'
+  const subject = name ?? 'they'
+
   // Editing, but the client isn't loaded yet (or couldn't be)
   if (!form) {
     return error ? (
@@ -231,287 +268,351 @@ function ClientForm({ id }: { id?: string }) {
         </ol>
       </nav>
 
-      <h1>{id && saved ? `Edit profile: ${saved.preferred_name}` : 'Add client'}</h1>
+      <h1 className="form-title">
+        {id && saved ? `Edit profile: ${saved.preferred_name}` : 'Add client'}
+        {id && <span lang="mi">Whakatika</span>}
+      </h1>
+      <p className="form-intro">
+        Build this from {name ? `${name}'s` : 'their'} support plan. Record what affects which
+        activities will work for {name ?? 'them'}.
+      </p>
 
-      <form onSubmit={handleSubmit}>
-      {/* 1. About: always open */}
-      <details open>
-        <summary>About</summary>
+      <form onSubmit={handleSubmit} className="client-form">
+        {/* About: name, birth year, suburb and travel range on one row */}
+        <FormSection id="about-heading" title="About" wide={wide} startOpen>
+          <div className="form-row">
+            <label>
+              Preferred name (required)
+              <input
+                value={form.preferred_name}
+                onChange={(e) => set('preferred_name', e.target.value)}
+                required
+                maxLength={100}
+              />
+            </label>
 
-        <label>
-          Preferred name (required)
-          <input
-            value={form.preferred_name}
-            onChange={(e) => set('preferred_name', e.target.value)}
-            required
-            maxLength={100}
-          />
-        </label>
+            <label>
+              Birth year
+              <input
+                type="number"
+                min={1900}
+                max={new Date().getFullYear()}
+                value={form.birth_year}
+                onChange={(e) => set('birth_year', e.target.value)}
+                aria-describedby="birth-hint"
+              />
+              <span id="birth-hint" className="field-hint">
+                Used for age limits on activities.
+              </span>
+            </label>
 
-        <label>
-          Birth year
-          <input
-            type="number"
-            min={1900}
-            max={new Date().getFullYear()}
-            value={form.birth_year}
-            onChange={(e) => set('birth_year', e.target.value)}
-          />
-        </label>
+            <label>
+              Suburb
+              <select value={form.suburb_id} onChange={(e) => set('suburb_id', e.target.value)}>
+                <option value="">Not set</option>
+                {councils.map((council) => (
+                  <optgroup key={council} label={council}>
+                    {suburbs
+                      .filter((s) => s.territorial_authority === council)
+                      .map((s) => (
+                        <option key={s.suburb_id} value={s.suburb_id}>
+                          {s.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
 
-        <label>
-          Suburb
-          <select value={form.suburb_id} onChange={(e) => set('suburb_id', e.target.value)}>
-            <option value="">Not set</option>
-            {councils.map((council) => (
-              <optgroup key={council} label={council}>
-                {suburbs
-                  .filter((s) => s.territorial_authority === council)
-                  .map((s) => (
-                    <option key={s.suburb_id} value={s.suburb_id}>
-                      {s.name}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-      </details>
+            <label>
+              Travel range (minutes)
+              <input
+                type="number"
+                min={1}
+                value={form.travel_range_minutes}
+                onChange={(e) => set('travel_range_minutes', e.target.value)}
+                aria-describedby="travel-hint"
+              />
+              <span id="travel-hint" className="field-hint">
+                Not used for suggestions yet.
+              </span>
+            </label>
+          </div>
+        </FormSection>
 
-      {/* Goals (SCRUM-94): up to 5, in the client's own words */}
-      <details open={wide}>
-        <summary>Goals</summary>
-        <fieldset>
-          <legend>Their goals, in their own words where you can (up to {MAX_GOALS})</legend>
+        {/* Goals (SCRUM-94): up to 5, in the client's own words */}
+        <FormSection id="goals-heading" title="Goals" mi="Ngā whāinga" wide={wide}>
+          <p className="field-hint">In {who} words where you can. Up to {MAX_GOALS}.</p>
           {/* The position is the key: each input's text always comes from form.goals */}
-          {form.goals.map((goal, i) => (
-            <div key={i}>
-              <label>
-                Goal {i + 1}
-                <input value={goal} maxLength={200} onChange={(e) => setGoal(i, e.target.value)} />
-              </label>
-              <button type="button" onClick={() => removeGoal(i)} aria-label={`Remove goal ${i + 1}`}>
-                Remove
-              </button>
-            </div>
-          ))}
+          <ol className="goal-rows">
+            {form.goals.map((goal, i) => (
+              <li key={i}>
+                <span className="goal-number" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <input
+                  aria-label={`Goal ${i + 1}`}
+                  value={goal}
+                  maxLength={200}
+                  onChange={(e) => setGoal(i, e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="goal-remove"
+                  onClick={() => removeGoal(i)}
+                  aria-label={`Remove goal ${i + 1}`}
+                >
+                  <X size={18} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ol>
           {form.goals.length < MAX_GOALS && (
-            <button type="button" onClick={addGoal}>
+            <button type="button" className="goal-add" onClick={addGoal}>
+              <Plus size={18} aria-hidden="true" />
               Add goal
             </button>
           )}
-        </fieldset>
-      </details>
+        </FormSection>
 
-      {/* 2. Support and access */}
-      <details open={wide}>
-        <summary>Support and access</summary>
-
-        <fieldset>
-          <legend>Support needed (required)</legend>
-          {SUPPORT_NEEDED.map((o) => (
-            <label key={o.value}>
-              <input
-                type="radio"
-                name="support_needed"
-                value={o.value}
-                checked={form.support_needed === o.value}
-                onChange={() => set('support_needed', o.value)}
-                required
-              />
-              {o.label}
-            </label>
-          ))}
-        </fieldset>
-
-        <label>
-          Most physical activity they can manage (required)
-          <select
-            value={form.max_physical_demand}
-            onChange={(e) => set('max_physical_demand', e.target.value)}
-            required
-          >
-            <option value="">Choose…</option>
-            {LEVELS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          Physical notes
-          <textarea
-            rows={2}
-            maxLength={1000}
-            aria-describedby="notes-hint"
-            value={form.physical_notes}
-            onChange={(e) => set('physical_notes', e.target.value)}
-          />
-        </label>
-
-        <label>
-          <input
-            type="checkbox"
-            checked={form.needs_step_free}
-            onChange={(e) => set('needs_step_free', e.target.checked)}
-          />
-          Needs step-free access
-        </label>
-
-        <label>
-          Most noise and busyness they can manage (required)
-          <select
-            value={form.max_sensory_load}
-            onChange={(e) => set('max_sensory_load', e.target.value)}
-            required
-          >
-            <option value="">Choose…</option>
-            {LEVELS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          <input
-            type="checkbox"
-            checked={form.sensory_hard_limit}
-            onChange={(e) => set('sensory_hard_limit', e.target.checked)}
-          />
-          This is a hard limit (never suggest anything louder or busier)
-        </label>
-
-        <label>
-          Sensory notes
-          <textarea
-            rows={2}
-            maxLength={1000}
-            aria-describedby="notes-hint"
-            value={form.sensory_notes}
-            onChange={(e) => set('sensory_notes', e.target.value)}
-          />
-        </label>
-
-        <label>
-          How they like to take part
-          <textarea
-            rows={2}
-            maxLength={1000}
-            aria-describedby="notes-hint"
-            value={form.participation_notes}
-            onChange={(e) => set('participation_notes', e.target.value)}
-          />
-        </label>
-
-        <p id="notes-hint">{NOTES_HINT}</p>
-      </details>
-
-      {/* 3. Getting there and cost */}
-      <details open={wide}>
-        <summary>Getting there and cost</summary>
-
-        <fieldset>
-          <legend>Transport they can use</legend>
-          {TRANSPORT.map((o) => (
-            <label key={o.value}>
-              <input
-                type="checkbox"
-                checked={form.transport.includes(o.value)}
-                onChange={() => toggle('transport', o.value)}
-              />
-              {o.label}
-            </label>
-          ))}
-        </fieldset>
-
-        <label>
-          How far they can travel (minutes)
-          <input
-            type="number"
-            min={1}
-            value={form.travel_range_minutes}
-            onChange={(e) => set('travel_range_minutes', e.target.value)}
-            aria-describedby="travel-hint"
-          />
-        </label>
-        <p id="travel-hint">Not used for suggestions yet.</p>
-
-        <label>
-          Most they can pay per session ($)
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            value={form.max_cost}
-            onChange={(e) => set('max_cost', e.target.value)}
-          />
-        </label>
-      </details>
-
-      {/* 4. Interests */}
-      <details open={wide}>
-        <summary>Interests</summary>
-        <fieldset>
-          <legend>What they enjoy</legend>
-          {tags.map((t) => (
-            <label key={t.tag_id}>
-              <input
-                type="checkbox"
-                checked={form.interests.includes(t.tag_id)}
-                onChange={() => toggle('interests', t.tag_id)}
-              />
-              {t.name}
-            </label>
-          ))}
-        </fieldset>
-      </details>
-
-      {/* 5. Availability: a day × time-of-day grid */}
-      <details open={wide}>
-        <summary>Availability</summary>
-        <table>
-          <caption>When they're free</caption>
-          <thead>
-            <tr>
-              <th scope="col">Day</th>
-              {SLOTS.map((s) => (
-                <th key={s.value} scope="col">{s.label}</th>
+        {/* Interests: the shared tags, in columns */}
+        <FormSection id="interests-heading" title="Interests" mi="Ngā aronga" wide={wide}>
+          <fieldset className="plain-fieldset">
+            <legend>{name ? `What ${name} enjoys` : 'What they enjoy'}</legend>
+            <div className="check-columns">
+              {tags.map((t) => (
+                <label key={t.tag_id}>
+                  <input
+                    type="checkbox"
+                    checked={form.interests.includes(t.tag_id)}
+                    onChange={() => toggle('interests', t.tag_id)}
+                  />
+                  {t.name}
+                </label>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {DAYS.map((d) => (
-              <tr key={d.value}>
-                <th scope="row">{d.label}</th>
-                {SLOTS.map((s) => {
-                  const key = `${d.value}-${s.value}`
-                  return (
-                    <td key={key}>
-                      <input
-                        type="checkbox"
-                        aria-label={`${d.label} ${s.label}`}
-                        checked={form.availability.includes(key)}
-                        onChange={() => toggle('availability', key)}
-                      />
-                    </td>
-                  )
-                })}
+            </div>
+          </fieldset>
+        </FormSection>
+
+        {/* Access and support needs: the same fields as the activity catalogue */}
+        <FormSection
+          id="needs-heading"
+          title="Access and support needs"
+          mi="Ngā matea tautoko"
+          wide={wide}
+        >
+          <p className="field-hint">
+            These use the same fields as the activity catalogue, so the two can be matched.
+          </p>
+
+          <fieldset className="plain-fieldset">
+            <legend>Most physical activity {subject} can manage (required)</legend>
+            <div className="segmented">
+              {LEVELS.map((o) => (
+                <label key={o.value}>
+                  <input
+                    type="radio"
+                    name="max_physical_demand"
+                    value={o.value}
+                    checked={form.max_physical_demand === o.value}
+                    onChange={() => set('max_physical_demand', o.value)}
+                    required
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <label>
+            Physical notes
+            <textarea
+              rows={2}
+              maxLength={1000}
+              aria-describedby="notes-hint"
+              value={form.physical_notes}
+              onChange={(e) => set('physical_notes', e.target.value)}
+            />
+          </label>
+
+          <fieldset className="plain-fieldset">
+            <legend>Most noise and busyness {subject} can manage (required)</legend>
+            <div className="segmented">
+              {LEVELS.map((o) => (
+                <label key={o.value}>
+                  <input
+                    type="radio"
+                    name="max_sensory_load"
+                    value={o.value}
+                    checked={form.max_sensory_load === o.value}
+                    onChange={() => set('max_sensory_load', o.value)}
+                    required
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <label className="hard-limit">
+            <input
+              type="checkbox"
+              checked={form.sensory_hard_limit}
+              onChange={(e) => set('sensory_hard_limit', e.target.checked)}
+            />
+            <span>
+              <strong>Hard limit.</strong> Leave out busier activities altogether, instead of
+              showing them with a warning.
+            </span>
+          </label>
+
+          <label>
+            Sensory notes
+            <textarea
+              rows={2}
+              maxLength={1000}
+              aria-describedby="notes-hint"
+              value={form.sensory_notes}
+              onChange={(e) => set('sensory_notes', e.target.value)}
+            />
+          </label>
+
+          <label>
+            {name ? `How ${name} likes to take part` : 'How they like to take part'}
+            <textarea
+              rows={2}
+              maxLength={1000}
+              aria-describedby="notes-hint"
+              value={form.participation_notes}
+              onChange={(e) => set('participation_notes', e.target.value)}
+            />
+          </label>
+          <p id="notes-hint" className="field-hint">
+            {NOTES_HINT}
+          </p>
+
+          {/* Transport and support side by side */}
+          <div className="form-two-col">
+            <fieldset className="plain-fieldset">
+              <legend>Transport {subject} can use</legend>
+              {TRANSPORT.map((o) => (
+                <label key={o.value}>
+                  <input
+                    type="checkbox"
+                    checked={form.transport.includes(o.value)}
+                    onChange={() => toggle('transport', o.value)}
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </fieldset>
+
+            <fieldset className="plain-fieldset">
+              <legend>Support needed at the activity (required)</legend>
+              {SUPPORT_NEEDED.map((o) => (
+                <label key={o.value}>
+                  <input
+                    type="radio"
+                    name="support_needed"
+                    value={o.value}
+                    checked={form.support_needed === o.value}
+                    onChange={() => set('support_needed', o.value)}
+                    required
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </fieldset>
+          </div>
+
+          {/* Step-free and cost side by side */}
+          <div className="form-two-col">
+            <fieldset className="plain-fieldset">
+              <legend>Needs step-free access</legend>
+              <div className="inline-options">
+                <label>
+                  <input
+                    type="radio"
+                    name="needs_step_free"
+                    checked={form.needs_step_free}
+                    onChange={() => set('needs_step_free', true)}
+                  />
+                  Yes
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="needs_step_free"
+                    checked={!form.needs_step_free}
+                    onChange={() => set('needs_step_free', false)}
+                  />
+                  No
+                </label>
+              </div>
+            </fieldset>
+
+            <label>
+              Most {subject} can pay per session
+              <span className="money-input">
+                <span aria-hidden="true">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.max_cost}
+                  onChange={(e) => set('max_cost', e.target.value)}
+                />
+              </span>
+            </label>
+          </div>
+
+          {/* Availability: days across, times of day down (hi-fi 04) */}
+          <table className="availability-grid">
+            <caption>{name ? `When ${name} is free` : "When they're free"}</caption>
+            <thead>
+              <tr>
+                <td />
+                {DAYS.map((d) => (
+                  <th key={d.value} scope="col">
+                    <abbr title={d.label}>{d.label.slice(0, 3)}</abbr>
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </details>
+            </thead>
+            <tbody>
+              {SLOTS.map((s) => (
+                <tr key={s.value}>
+                  <th scope="row">{s.label}</th>
+                  {DAYS.map((d) => {
+                    const key = `${d.value}-${s.value}`
+                    return (
+                      <td key={key}>
+                        <input
+                          type="checkbox"
+                          aria-label={`${d.label} ${s.label}`}
+                          checked={form.availability.includes(key)}
+                          onChange={() => toggle('availability', key)}
+                        />
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </FormSection>
 
-      {error && <p role="alert">{error}</p>}
+        {error && <p role="alert">{error}</p>}
 
-      <div className="profile-actions">
-        <button type="submit" disabled={saving}>
-          {saving ? 'Saving…' : id ? 'Save changes' : 'Save client'}
-        </button>
-        <Link to={id ? `/clients/${id}` : '/clients'} className="button button-outline">
-          Cancel
-        </Link>
-      </div>
+        {/* Cancel and Save at the bottom right, like the hi-fi */}
+        <div className="form-actions">
+          <Link to={id ? `/clients/${id}` : '/clients'} className="button button-outline">
+            Cancel
+          </Link>
+          <button type="submit" disabled={saving}>
+            {saving ? 'Saving…' : id ? 'Save profile' : 'Save client'}
+          </button>
+        </div>
       </form>
     </>
   )

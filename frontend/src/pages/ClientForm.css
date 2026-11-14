@@ -35,3 +35,241 @@
   font-size: 1.1rem;
   color: var(--muted);
 }
+
+/* ---- Edit / Add client form (SCRUM-129, hi-fi 04) ---- */
+
+/* Title with "Whakatika" underneath, then one line of intro */
+.form-title {
+  margin-bottom: 4px;
+}
+
+.form-title span {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.1rem;
+  color: var(--muted);
+}
+
+.form-intro {
+  margin: 0 0 24px;
+  color: var(--muted);
+}
+
+/* Each part of the form is a white card */
+.client-form {
+  display: grid;
+  gap: 20px;
+}
+
+.form-card {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
+}
+
+.form-card-heading {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.form-card-heading span {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Small grey help text under a field or heading */
+.field-hint {
+  display: block;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* About: four fields on one row, wrapping on narrower screens */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+/* Fieldsets inside a card: no box of their own, just the bold legend */
+.plain-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.plain-fieldset legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-weight: 700;
+}
+
+/* Notes boxes use the full card width */
+.form-card textarea {
+  max-width: none;
+}
+
+/* Goals: number, text box, × on one line */
+.goal-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.goal-rows li {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.goal-rows input {
+  max-width: none;
+}
+
+.goal-number {
+  font-weight: 700;
+  text-align: center;
+}
+
+.goal-remove {
+  min-width: 48px;
+  padding: 0;
+}
+
+.goal-add {
+  justify-self: start;
+  border-style: dashed;
+}
+
+/* Interests: checkboxes in columns instead of one long list */
+.check-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px 16px;
+}
+
+/* Low / Medium / High as three buttons (still radio buttons underneath) */
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 40rem;
+}
+
+.segmented label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+}
+
+/* The chosen level is tinted and bold, so it isn't shown by colour alone */
+.segmented label:has(input:checked) {
+  background: var(--mint);
+  border-color: var(--green);
+  font-weight: 700;
+}
+
+/* Hard limit: a tinted strip so it stands out */
+.hard-limit {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--paper);
+  border-radius: var(--radius-small);
+  font-weight: 400;
+}
+
+.hard-limit input {
+  margin-top: 4px;
+}
+
+/* Two groups side by side (transport | support, step-free | cost) */
+.form-two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px 32px;
+  align-items: start;
+}
+
+.inline-options {
+  display: flex;
+  gap: 24px;
+}
+
+/* "$" in front of the cost box */
+.money-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 14rem;
+}
+
+/* Availability: days across, times down */
+.availability-grid {
+  justify-self: start; /* only as wide as it needs, not the whole card */
+}
+
+.availability-grid caption {
+  margin-bottom: 8px;
+  text-align: left;
+  font-weight: 700;
+}
+
+.availability-grid th,
+.availability-grid td {
+  padding: 6px 10px;
+  text-align: center;
+}
+
+.availability-grid tbody th {
+  text-align: left;
+}
+
+.availability-grid abbr {
+  text-decoration: none;
+}
+
+/* Cancel and Save at the bottom right */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Wide screens: keep Cancel and Save in view while scrolling the long form.
+   It settles under the last card when you reach the end. */
+@media (min-width: 768px) {
+  .form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    padding: 16px 0;
+    background: var(--sand);
+    border-top: 1px solid var(--card-edge);
+  }
+
+  /* When tabbing, scroll fields clear of the bar so focus is never hidden */
+  :root:has(.form-actions) {
+    scroll-padding-bottom: 100px;
+  }
+}
