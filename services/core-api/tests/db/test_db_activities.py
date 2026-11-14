@@ -46,3 +46,14 @@ def test_checked_by_follows_checked_at(api, headers):
     assert r.status_code == 200, r.text
     assert r.json()["checked_at"] == checked
     assert r.json()["checked_by"] == CORA
+
+
+def test_activity_detail_has_provider_and_suburb_names(api, headers):
+    # SCRUM-129 fix 07: the read-only page gets names, not just ids
+    r = api.get(f"/activities/{POTTERY}", headers=headers("will"))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["provider_name"], "the seed gives Pottery a provider"
+    for field in ("provider_phone", "provider_email", "provider_website", "suburb_name"):
+        assert field in body
+    assert "checked_by_name" in body

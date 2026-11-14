@@ -362,7 +362,9 @@ export default function FindActivities({ client }: Props) {
                     </span>
                     <div className="find-lead-title">
                       <h2>
-                        <Link to={`/activities/${lead.activity_id}`}>{lead.activity_name}</Link>
+                        <Link to={`/activities/${lead.activity_id}?client=${client.client_id}`}>
+                          {lead.activity_name}
+                        </Link>
                       </h2>
                       {meta && <p className="find-lead-meta">{meta}</p>}
                     </div>

@@ -30,7 +30,19 @@ DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 
 def to_detail(row: dict) -> dict:
-    """Reshape a database row (with its linked tables) into the ActivityDetail shape."""
+    """Reshape a database row (with its linked tables) into the ActivityDetail shape.
+    SCRUM-129 fix 07: also the provider's contact details, the suburb name and who
+    checked it, for the read-only Activity detail page."""
+    provider = row.pop("providers", None) or {}
+    row["provider_name"] = provider.get("name")
+    row["provider_phone"] = provider.get("contact_phone")
+    row["provider_email"] = provider.get("contact_email")
+    row["provider_website"] = provider.get("website")
+    row["suburb_name"] = (row.pop("suburbs", None) or {}).get("name")
+    # Empty if RLS hides the person (e.g. they've left the organisation)
+    checker = row.pop("checker", None) or {}
+    name = " ".join(n for n in (checker.get("first_name"), checker.get("last_name")) if n)
+    row["checked_by_name"] = name or None
     row["tags"] = [item["tag_id"] for item in row.pop("activity_tags")]
     sessions = row.pop("activity_sessions")
     row["sessions"] = sorted(
@@ -159,7 +171,10 @@ def get_activity(activity_id: UUID, caller: CurrentCaller):
         caller.db.table("activities")
         .select(
             f"{ACTIVITY_FIELDS}, activity_tags(tag_id), "
-            "activity_sessions(day, start_time, end_time)"
+            "activity_sessions(day, start_time, end_time), "
+            "providers(name, contact_phone, contact_email, website), suburbs(name), "
+            # activities links to profiles twice (created_by, checked_by): name the link
+            "checker:profiles!activities_checked_by_fkey(first_name, last_name)"
         )
         .eq("activity_id", str(activity_id))
         .maybe_single()

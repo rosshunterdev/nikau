@@ -320,7 +320,7 @@ function CatalogueRows({ activities, isCoordinator, forClient, savingId, onSave 
               <div className="catalogue-row-main">
                 <h2>
                   <Link
-                    to={`/activities/${a.activity_id}`}
+                    to={`/activities/${a.activity_id}${forClient ? `?client=${forClient.id}` : ''}`}
                     ref={(el) => {
                       links.current[i] = el
                     }}
@@ -362,7 +362,7 @@ function CatalogueRows({ activities, isCoordinator, forClient, savingId, onSave 
                     </button>
                   ))}
                 {isCoordinator && (
-                  <Link to={`/activities/${a.activity_id}`} aria-label={`Edit ${a.name}`}>
+                  <Link to={`/activities/${a.activity_id}/edit`} aria-label={`Edit ${a.name}`}>
                     Edit
                   </Link>
                 )}

@@ -11,6 +11,7 @@ import AppLayout from './components/AppLayout'
 import ProviderList from './pages/ProviderList'
 import ProviderForm from './pages/ProviderForm'
 import ActivityList from './pages/ActivityList'
+import ActivityDetail from './pages/ActivityDetail'
 import ActivityForm from './pages/ActivityForm'
 import SavedLeads from './pages/SavedLeads'
 import MatchingLog from './pages/MatchingLog'
@@ -99,7 +100,8 @@ export default function App() {
           <Route path="/clients/:id/find" element={<FindActivitiesPage />} />
           <Route path="/activities" element={<ActivityList />} />
           <Route path="/activities/new" element={<ActivityForm />} />
-          <Route path="/activities/:id" element={<ActivityForm />} />
+          <Route path="/activities/:id" element={<ActivityDetail />} />
+          <Route path="/activities/:id/edit" element={<ActivityForm />} />
           <Route path="/leads" element={<SavedLeads />} />
           <Route
             path="/providers"

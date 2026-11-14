@@ -6,6 +6,7 @@ import { formatDate } from '../lib/leads'
 import { DAYS, LEVELS, SLOTS, SUPPORT_NEEDED, TRANSPORT } from '../lib/options'
 import type { ClientDetail, Suburb, Tag } from '../lib/types'
 import ClientLeads from '../components/ClientLeads'
+import LevelBars from '../components/LevelBars'
 import './ClientForm.css'
 import './ClientProfile.css'
 
@@ -19,20 +20,6 @@ function labelOf(options: { value: string; label: string }[], value: string | nu
 // A level as "Up to medium", or "Not set"
 function upTo(level: string | null) {
   return level ? `Up to ${labelOf(LEVELS, level).toLowerCase()}` : 'Not set'
-}
-
-// Three small bars filled up to the level (low = 1, medium = 2, high = 3), like the hi-fi.
-// Decorative only: the words next to them ("Up to medium") say the same thing.
-function LevelBars({ level }: { level: string | null }) {
-  if (!level) return null
-  const filled = LEVELS.findIndex((l) => l.value === level) + 1
-  return (
-    <span className="level-bars" aria-hidden="true">
-      {[1, 2, 3].map((n) => (
-        <span key={n} className={n <= filled ? 'on' : undefined} />
-      ))}
-    </span>
-  )
 }
 
 // "Sam Rivers" → "SR"

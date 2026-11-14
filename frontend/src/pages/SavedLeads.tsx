@@ -175,7 +175,9 @@ export default function SavedLeads() {
                   <li key={lead.lead_id} className="lead-card">
                     <div className="lead-card-about">
                       <h3>
-                        <Link to={`/activities/${lead.activity_id}`}>{lead.activity_name}</Link>
+                        <Link to={`/activities/${lead.activity_id}?client=${lead.client_id}`}>
+                          {lead.activity_name}
+                        </Link>
                       </h3>
                       {meta && <p className="lead-card-meta">{meta}</p>}
                       <p className="lead-card-meta">{saved}</p>
