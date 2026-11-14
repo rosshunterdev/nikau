@@ -7,7 +7,7 @@ import './ClientForm.css'
 
 // SCRUM-117 / SCRUM-91: Find activities on its own page. Matching starts as soon as
 // the client has loaded; the component shows loading, suggestions (05),
-// matching unavailable (06) and no good fit (07).
+// matching unavailable (06) and no good fit (07), each with its own heading.
 export default function FindActivitiesPage() {
   const { id } = useParams()
   const [client, setClient] = useState<ClientDetail>()
@@ -49,12 +49,8 @@ export default function FindActivitiesPage() {
         </ol>
       </nav>
 
-      <h1 className="find-title">
-        Find activities for {client.preferred_name}
-        <span lang="mi">Rapu ngohe</span>
-      </h1>
-
-      {/* key: a different client gets a fresh search */}
+      {/* The heading and its buttons change with the result, so FindActivities draws them.
+          key: a different client gets a fresh search */}
       <FindActivities key={client.client_id} client={client} />
     </>
   )
