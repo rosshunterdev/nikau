@@ -123,6 +123,12 @@ export type MatchLead = {
   why_fits: string[]
   why_doesnt_cover: string[]
   why_ask: string[]
+  suburb: string | null
+  sessions: ActivitySession[] // times as "10:00"
+  cost_per_session: number | null
+  physical_demand: Level | null
+  sensory_load: Level | null
+  support_worker_policy: string | null
 }
 
 export type FindActivitiesResponse = {

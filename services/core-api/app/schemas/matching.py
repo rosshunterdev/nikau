@@ -7,6 +7,12 @@ from pydantic import BaseModel
 MatchResult = Literal["success", "no_good_fit", "no_candidates", "timeout", "error", "invalid_output"]
 
 
+class LeadSession(BaseModel):
+    day: str
+    start_time: str  # "10:00"
+    end_time: str
+
+
 class MatchLead(BaseModel):
     """One AI suggestion, ready to show and to save as a lead (SCRUM-85)."""
 
@@ -16,6 +22,12 @@ class MatchLead(BaseModel):
     why_fits: list[str]
     why_doesnt_cover: list[str] = []
     why_ask: list[str] = []
+    suburb: str | None = None
+    sessions: list[LeadSession] = []
+    cost_per_session: float | None = None
+    physical_demand: str | None = None
+    sensory_load: str | None = None
+    support_worker_policy: str | None = None
 
 
 class FindActivitiesResponse(BaseModel):

@@ -44,7 +44,18 @@ def test_success_logs_and_returns_leads():
     log, reply, sent = run([activity("e1")], MatchOutcome("success", 1200, [LEAD], 900, 0))
     assert reply["result"] == "success"
     assert reply["message"] is None
-    assert reply["leads"] == [{**LEAD, "activity_name": "Activity e1"}]
+    assert reply["leads"] == [
+        {
+            **LEAD,
+            "activity_name": "Activity e1",
+            "suburb": None,
+            "sessions": [],
+            "cost_per_session": None,
+            "physical_demand": None,
+            "sensory_load": None,
+            "support_worker_policy": None,
+        }
+    ]
     assert log["result"] == "success"
     assert log["fallback_shown"] is False
     assert (log["candidate_count"], log["leads_shown"]) == (1, 1)
@@ -98,3 +109,23 @@ def test_log_failure_keeps_a_reply_that_has_no_leads():
     _, reply, _ = run([activity("e1")], MatchOutcome("no_good_fit", 900))
 
     assert reply_when_log_failed(reply) == reply
+
+
+def test_leads_carry_the_activity_details_for_the_card():
+    # SCRUM-129 fix 04: where, when, cost and levels, from the shortlist
+    garden = activity(
+        "e1",
+        suburbs={"name": "Evans Bay"},
+        activity_sessions=[{"day": "tue", "start_time": "10:00:00", "end_time": "12:00:00"}],
+        cost_per_session=0,
+        physical_demand="low",
+        sensory_load="low",
+        support_worker_policy="attend_free",
+    )
+    _, reply, _ = run([garden], MatchOutcome("success", 1200, [LEAD], 900, 0))
+    lead = reply["leads"][0]
+    assert lead["suburb"] == "Evans Bay"
+    assert lead["sessions"] == [{"day": "tue", "start_time": "10:00", "end_time": "12:00"}]
+    assert lead["cost_per_session"] == 0
+    assert (lead["physical_demand"], lead["sensory_load"]) == ("low", "low")
+    assert lead["support_worker_policy"] == "attend_free"

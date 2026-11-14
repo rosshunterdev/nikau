@@ -311,10 +311,10 @@ def run_match(
     suburb_name = (client_row.get("suburbs") or {}).get("name")
     outcome = call(to_ai_request(request_id, client, shortlist, tag_names, suburb_name, year))
 
-    # Add the activity's name to each lead, for the screen
+    # Add the activity's details to each lead, for the screen (SCRUM-129 fix 04)
     by_id = {a["activity_id"]: a for a in shortlist}
     leads = [
-        {**r, "activity_name": by_id[r["activity_id"]]["name"]}
+        {**r, **lead_details(by_id[r["activity_id"]])}
         for r in outcome.results
         if r["activity_id"] in by_id
     ]
@@ -328,6 +328,23 @@ def run_match(
         "fallback_shown": outcome.result != "success",
     }
     return log, response(request_id, outcome.result, leads)
+
+
+def lead_details(activity: dict) -> dict:
+    """What the suggestion card shows about the activity: name, where, when, cost,
+    levels and the support worker policy. Taken from the shortlist, so no extra query."""
+    return {
+        "activity_name": activity["name"],
+        "suburb": (activity.get("suburbs") or {}).get("name"),
+        "sessions": [
+            {"day": s["day"], "start_time": hhmm(s["start_time"]), "end_time": hhmm(s["end_time"])}
+            for s in activity.get("activity_sessions") or []
+        ],
+        "cost_per_session": activity.get("cost_per_session"),
+        "physical_demand": activity.get("physical_demand"),
+        "sensory_load": activity.get("sensory_load"),
+        "support_worker_policy": activity.get("support_worker_policy"),
+    }
 
 
 def response(request_id: str, result: str, leads: list[dict]) -> dict:

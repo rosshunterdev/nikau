@@ -1,9 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { Check, RefreshCw, TriangleAlert } from 'lucide-react'
+import { Check, Lock, RefreshCw, TriangleAlert } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import { clientFilters } from '../lib/catalogueFilters'
-import type { ClientDetail, FindActivitiesResponse, Lead, MatchLead } from '../lib/types'
+import { formatDate } from '../lib/leads'
+import { DAYS, LEVELS, SUPPORT_WORKER_POLICY } from '../lib/options'
+import type {
+  ActivitySession,
+  ClientDetail,
+  FindActivitiesResponse,
+  Lead,
+  MatchLead,
+} from '../lib/types'
 import Why from './Why'
 import './FindActivities.css'
 
@@ -18,6 +26,57 @@ type View =
   | { kind: 'no_fit'; nothingReachable: boolean } // 07
   | { kind: 'unavailable' } // 06: matching failed or the server couldn't be reached
 
+// The first three suggestions show their reasons; the rest show them on request (hi-fi 05)
+const OPEN_REASONS = 3
+
+// "10:00" → "10am", "10:30" → "10:30am", "12:00" → "12pm"
+function formatTime(hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number)
+  const suffix = h < 12 ? 'am' : 'pm'
+  const hour = h % 12 === 0 ? 12 : h % 12
+  return m === 0 ? `${hour}${suffix}` : `${hour}:${String(m).padStart(2, '0')}${suffix}`
+}
+
+// "Tuesdays 10am–12pm"
+function formatSession(s: ActivitySession) {
+  const day = DAYS.find((d) => d.value === s.day)?.label ?? s.day
+  return `${day}s ${formatTime(s.start_time)}–${formatTime(s.end_time)}`
+}
+
+function formatCost(cost: number | null) {
+  if (cost === null) return null
+  if (cost === 0) return 'Free'
+  // "$15" for whole dollars, "$7.50" otherwise
+  return cost.toLocaleString('en-NZ', {
+    style: 'currency',
+    currency: 'NZD',
+    minimumFractionDigits: Number.isInteger(cost) ? 0 : 2,
+  })
+}
+
+// "Evans Bay · Tuesdays 10am–12pm · Free" (leaves out anything not known)
+function leadMeta(lead: MatchLead) {
+  return [lead.suburb, ...lead.sessions.map(formatSession), formatCost(lead.cost_per_session)]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+// The small grey tags under the name: levels and the support worker policy
+function leadChips(lead: MatchLead) {
+  const level = (value: string | null) =>
+    LEVELS.find((l) => l.value === value)?.label.toLowerCase()
+  const chips: string[] = []
+  if (lead.physical_demand) chips.push(`Physical: ${level(lead.physical_demand)}`)
+  if (lead.sensory_load) chips.push(`Sensory: ${level(lead.sensory_load)}`)
+  const policy = SUPPORT_WORKER_POLICY.find((p) => p.value === lead.support_worker_policy)
+  if (policy) chips.push(policy.label)
+  return chips
+}
+
+function plural(n: number, word: string) {
+  return `${n} ${word}${n === 1 ? '' : 's'}`
+}
+
 // SCRUM-112 / SCRUM-91: run AI matching as soon as the page opens, then show the
 // suggestions, "no good fit", or the catalogue fallback when matching is unavailable.
 export default function FindActivities({ client }: Props) {
@@ -31,6 +90,16 @@ export default function FindActivities({ client }: Props) {
 
   const name = client.preferred_name
   const catalogueLink = `/activities?client=${client.client_id}&${clientFilters(client)}`
+  const editLink = `/clients/${client.client_id}/edit`
+  const updated = formatDate(client.updated_at)
+  // "3 goals · 4 interests · access and support needs" (leaves out a count of 0)
+  const matchedOn = [
+    client.goals.length > 0 && plural(client.goals.length, 'goal'),
+    client.interests.length > 0 && plural(client.interests.length, 'interest'),
+    'access and support needs',
+  ]
+    .filter(Boolean)
+    .join(' · ')
   // Nothing to match on yet: no interests and no goals (SCRUM-94, SCRUM-125)
   const noInterests = client.interests.length === 0 && client.goals.length === 0
 
@@ -100,29 +169,69 @@ export default function FindActivities({ client }: Props) {
     }
   }
 
+  // Page heading (hi-fi 05–07): "Suggested activities" once there's an answer,
+  // "Find activities" while finding, when unavailable, or before there's anything to match
+  const answered = view.kind === 'suggestions' || view.kind === 'no_fit'
+  const findAgain = (
+    <button type="button" className="button-outline" onClick={find}>
+      <RefreshCw size={18} aria-hidden="true" />
+      Find again
+    </button>
+  )
+  function header(actions?: ReactNode, intro?: ReactNode) {
+    return (
+      <div className="find-header">
+        <div>
+          <h1 className="find-title">
+            {answered && !noInterests ? 'Suggested activities' : 'Find activities'} for {name}
+            <span lang="mi">{answered && !noInterests ? 'Ngā ngohe' : 'Rapu ngohe'}</span>
+          </h1>
+          {intro && <p className="find-intro">{intro}</p>}
+        </div>
+        {actions && <div className="find-header-actions">{actions}</div>}
+      </div>
+    )
+  }
+
   // Nothing to match on: say what to do instead of asking the AI
   if (noInterests) {
     return (
-      <div className="find-panel">
-        <h2>Add interests or goals first</h2>
-        <p>
-          Nīkau matches on {name}'s goals and interests. Add at least one to {name}'s profile to
-          get suggestions.
-        </p>
-        <div className="profile-actions">
-          <Link to={`/clients/${client.client_id}/edit`} className="button button-primary">
-            Edit profile
-          </Link>
-          <Link to={catalogueLink} className="button button-outline">
-            Search the catalogue for {name}
-          </Link>
+      <>
+        {header()}
+        <div className="find-panel">
+          <h2>Add interests or goals first</h2>
+          <p>
+            Nīkau matches on {name}'s goals and interests. Add at least one to {name}'s profile
+            to get suggestions.
+          </p>
+          <div className="profile-actions">
+            <Link to={editLink} className="button button-primary">
+              Edit profile
+            </Link>
+            <Link to={catalogueLink} className="button button-outline">
+              Search the catalogue for {name}
+            </Link>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   return (
     <>
+      {view.kind === 'suggestions' &&
+        header(
+          <>
+            <Link to={catalogueLink} className="button button-outline">
+              Browse catalogue
+            </Link>
+            {findAgain}
+          </>,
+          <>Leads to follow up. Save the ones worth a call. You don't need to judge every one.</>,
+        )}
+      {view.kind === 'no_fit' && header(findAgain)}
+      {(view.kind === 'finding' || view.kind === 'unavailable') && header()}
+
       {/* Screen readers hear each change of state; the visible content follows below */}
       <p role="status" className="visually-hidden">
         {view.kind === 'finding' && `Finding activities for ${name}.`}
@@ -150,7 +259,7 @@ export default function FindActivities({ client }: Props) {
       {view.kind === 'unavailable' && (
         <div className="find-warning">
           <TriangleAlert size={28} aria-hidden="true" />
-          <div>
+          <div className="find-warning-text">
             <h2>Suggestions aren't available right now</h2>
             <p>
               The matching service didn't respond. You can still search the catalogue: {name}'s
@@ -161,15 +270,15 @@ export default function FindActivities({ client }: Props) {
                 Tried again ({tries - 1} {tries === 2 ? 'retry' : 'retries'}). Still not available.
               </p>
             )}
-            <div className="profile-actions">
-              <button type="button" className="button-primary" onClick={find}>
-                <RefreshCw size={18} aria-hidden="true" />
-                Try suggestions again
-              </button>
-              <Link to={catalogueLink} className="button button-outline">
-                Search the catalogue for {name}
-              </Link>
-            </div>
+          </div>
+          <div className="find-warning-actions">
+            <button type="button" className="button-primary" onClick={find}>
+              <RefreshCw size={18} aria-hidden="true" />
+              Try suggestions again
+            </button>
+            <Link to={catalogueLink} className="button button-outline">
+              Search the catalogue for {name}
+            </Link>
           </div>
         </div>
       )}
@@ -178,6 +287,9 @@ export default function FindActivities({ client }: Props) {
       {view.kind === 'no_fit' && (
         <>
           <div className="find-panel find-empty">
+            <span className="find-empty-mark">
+              <img src="/favicon.svg" alt="" width={32} height={32} />
+            </span>
             <h2>No good fit for {name} this time</h2>
             <p>
               {view.nothingReachable
@@ -187,7 +299,7 @@ export default function FindActivities({ client }: Props) {
             </p>
           </div>
 
-          <h2>What you can do next</h2>
+          <h2 className="find-next-heading">What you can do next</h2>
           <ul className="find-next">
             <li>
               <h3>Browse the catalogue</h3>
@@ -201,8 +313,8 @@ export default function FindActivities({ client }: Props) {
             </li>
             <li>
               <h3>Check {name}'s profile</h3>
-              <p>New goals or interests can change what fits.</p>
-              <Link to={`/clients/${client.client_id}/edit`} className="button button-outline">
+              <p>Profile updated {updated}. New goals or interests can change what fits.</p>
+              <Link to={editLink} className="button button-outline">
                 Edit profile
               </Link>
             </li>
@@ -214,27 +326,34 @@ export default function FindActivities({ client }: Props) {
               </p>
             </li>
           </ul>
-          <div className="profile-actions">
-            <button type="button" className="button-outline" onClick={find}>
-              <RefreshCw size={18} aria-hidden="true" />
-              Find again
-            </button>
-          </div>
+
+          <p className="find-footnote">
+            Suggestions come from Nīkau's checked activity catalogue. {name}'s name, contact
+            details and address are never shared with the matching service.
+          </p>
         </>
       )}
 
       {/* 05: the suggestions, each with the AI's reasons */}
       {view.kind === 'suggestions' && (
         <>
-          <div className="profile-actions">
-            <Link to={catalogueLink} className="button button-outline">
-              Browse catalogue
-            </Link>
-            <button type="button" onClick={find}>
-              <RefreshCw size={18} aria-hidden="true" />
-              Find again
-            </button>
-          </div>
+          {/* What the suggestions are based on, and what the AI was (and wasn't) told */}
+          <section className="find-context" aria-label="What these suggestions are based on">
+            <p>
+              <strong>Matched on:</strong> {matchedOn}
+              <span className="find-context-muted">
+                Profile updated {updated} · <Link to={editLink}>Edit profile</Link>
+              </span>
+            </p>
+            <p className="find-privacy">
+              <Lock size={16} aria-hidden="true" />
+              <span>
+                <strong>Shared with the matching service:</strong> goals, interests, access and
+                support needs, suburb, age range and free times. <strong>Not shared:</strong>{' '}
+                {name}'s name, birth year, contact details or address.
+              </span>
+            </p>
+          </section>
 
           {saveMessage && (
             <p className="find-saved-message">
@@ -243,48 +362,89 @@ export default function FindActivities({ client }: Props) {
           )}
 
           <ol className="find-leads">
-            {view.match.leads.map((lead, i) => (
-              <li key={lead.activity_id} className="find-lead">
-                <div className="find-lead-head">
-                  <span className="find-rank" aria-hidden="true">
-                    {i + 1}
-                  </span>
-                  <h2>
-                    <Link to={`/activities/${lead.activity_id}`}>{lead.activity_name}</Link>
-                  </h2>
-                  {saved.has(lead.activity_id) ? (
-                    <span className="find-saved">
-                      <Check size={18} aria-hidden="true" /> Saved for {name}
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="button-outline"
-                      onClick={() => save(view.match, lead)}
-                      disabled={saving === lead.activity_id}
-                      aria-label={`Save lead: ${lead.activity_name}`}
-                    >
-                      {saving === lead.activity_id ? 'Saving…' : 'Save lead'}
-                    </button>
-                  )}
-                </div>
-
+            {view.match.leads.map((lead, i) => {
+              const meta = leadMeta(lead)
+              const chips = leadChips(lead)
+              const reasons = (
                 <div className="find-why">
                   <p className="find-why-label">Why it was suggested · AI-written</p>
+                  {/* Only the parts the AI filled in, so there's no empty column */}
                   <div className="find-why-columns">
-                    <div>
-                      <Why title="Why it fits" items={lead.why_fits} />
-                    </div>
-                    <div>
-                      <Why title="What it doesn't cover" items={lead.why_doesnt_cover} />
-                    </div>
-                    <div>
-                      <Why title="Ask the provider" items={lead.why_ask} />
-                    </div>
+                    {(
+                      [
+                        ['Why it fits', lead.why_fits],
+                        ["What it doesn't cover", lead.why_doesnt_cover],
+                        ['Ask the provider', lead.why_ask],
+                      ] as const
+                    )
+                      .filter(([, items]) => items.length > 0)
+                      .map(([title, items]) => (
+                        <div key={title}>
+                          <Why title={title} items={items} />
+                        </div>
+                      ))}
                   </div>
                 </div>
-              </li>
-            ))}
+              )
+              return (
+                <li key={lead.activity_id} className="find-lead">
+                  <div className="find-lead-head">
+                    <span className="find-rank" aria-hidden="true">
+                      {i + 1}
+                    </span>
+                    <div className="find-lead-title">
+                      <h2>
+                        <Link to={`/activities/${lead.activity_id}`}>{lead.activity_name}</Link>
+                      </h2>
+                      {meta && <p className="find-lead-meta">{meta}</p>}
+                    </div>
+                    {saved.has(lead.activity_id) ? (
+                      <span className="find-saved">
+                        <Check size={18} aria-hidden="true" /> Saved for {name}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="button-outline"
+                        onClick={() => save(view.match, lead)}
+                        disabled={saving === lead.activity_id}
+                        aria-label={`Save lead: ${lead.activity_name}`}
+                      >
+                        {saving === lead.activity_id ? 'Saving…' : 'Save lead'}
+                      </button>
+                    )}
+                  </div>
+
+                  {i < OPEN_REASONS ? (
+                    <>
+                      {chips.length > 0 && (
+                        <ul className="find-chips" aria-label="About this activity">
+                          {chips.map((c) => (
+                            <li key={c}>{c}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {reasons}
+                    </>
+                  ) : (
+                    // Lower-ranked: reasons on request, so the top three stand out
+                    <details className="find-more">
+                      <summary>
+                        Show why<span className="visually-hidden"> for {lead.activity_name}</span>
+                      </summary>
+                      {chips.length > 0 && (
+                        <ul className="find-chips" aria-label="About this activity">
+                          {chips.map((c) => (
+                            <li key={c}>{c}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {reasons}
+                    </details>
+                  )}
+                </li>
+              )
+            })}
           </ol>
 
           <p className="find-footnote">

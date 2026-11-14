@@ -74,8 +74,28 @@
   font-weight: 700;
 }
 
-.find-warning .profile-actions {
-  margin: 16px 0 0;
+/* Text on the left, the two buttons on the right (stacked under on narrow screens) */
+.find-warning {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.find-warning-text {
+  flex: 1 1 24rem;
+}
+
+.find-warning-text p {
+  margin: 0;
+}
+
+.find-warning-text .find-retry-note {
+  margin-top: 8px;
+}
+
+.find-warning-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* 07: no good fit */
@@ -87,6 +107,22 @@
 .find-empty p {
   max-width: 36rem;
   margin: 0 auto;
+}
+
+/* Nīkau leaf in a paper circle above "No good fit" (decorative) */
+.find-empty-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.find-next-heading {
+  margin: 32px 0 16px;
+  font-size: 1.2rem;
 }
 
 .find-next {
@@ -218,4 +254,147 @@
   border: 1px solid var(--card-edge);
   border-radius: var(--radius);
   color: var(--muted);
+}
+
+/* ---- SCRUM-129 fix 04 (hi-fi 05–07) ---- */
+
+/* Title and intro on the left, Browse catalogue / Find again on the right */
+.find-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 24px;
+}
+
+.find-header .find-title {
+  margin-bottom: 0;
+}
+
+.find-intro {
+  max-width: 34rem;
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.find-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* "Matched on" and what was shared, above the suggestions */
+.find-context {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+}
+
+.find-context p {
+  margin: 0;
+}
+
+.find-context-muted {
+  margin-left: 24px;
+  color: var(--muted);
+}
+
+.find-privacy {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.find-privacy svg {
+  flex: none;
+  margin-top: 3px;
+}
+
+.find-saved-message {
+  margin: 0 0 20px;
+}
+
+/* Name with "Evans Bay · Tuesdays 10am–12pm · Free" under it */
+.find-lead-head {
+  align-items: flex-start;
+}
+
+.find-lead-title {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.find-lead-title h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.find-lead-meta {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.find-rank {
+  flex: none;
+}
+
+/* Small grey tags: Physical: low, Sensory: low, Worker attends free */
+.find-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.find-chips li {
+  padding: 4px 12px;
+  background: var(--paper);
+  border-radius: 999px;
+  font-size: 0.875rem;
+}
+
+/* 4th suggestion onwards: compact, with the reasons behind "Show why" */
+.find-lead:has(.find-more) .find-lead-head {
+  margin-bottom: 8px;
+}
+
+/* Plain toggle like the profile's lead Details, not the default boxed one */
+.find-more {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.find-more summary {
+  width: fit-content;
+  font-size: 1rem;
+  color: var(--green);
+}
+
+/* Tags, reasons and Show why line up with the activity name, not the rank number */
+.find-lead > .find-chips,
+.find-lead > .find-why,
+.find-more {
+  margin-left: 48px;
+}
+
+@media (max-width: 600px) {
+  .find-lead > .find-chips,
+  .find-lead > .find-why,
+  .find-more {
+    margin-left: 0;
+  }
+}
+
+.find-more[open] summary {
+  margin-bottom: 12px;
 }
