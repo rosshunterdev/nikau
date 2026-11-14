@@ -1,0 +1,231 @@
+/* SCRUM-129 fix 05: Saved leads (hi-fi 08) */
+
+/* Title and intro on the left, Client filter on the right */
+.leads-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 24px;
+}
+
+.leads-header h1 {
+  margin-bottom: 0;
+}
+
+.leads-intro {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.leads-filter label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.leads-message {
+  display: inline-block;
+  margin: 0 0 20px;
+  padding: 10px 16px;
+  background: var(--mint);
+  border-radius: var(--radius-small);
+}
+
+.leads-empty {
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
+}
+
+/* One client: initials, name, "2 leads", then their cards */
+.leads-group {
+  margin-bottom: 32px;
+}
+
+.leads-group-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.leads-group-head h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.leads-avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.leads-count {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.leads-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A lead: about | ask the provider | contact and Remove */
+.lead-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.1fr) minmax(220px, 1.2fr) minmax(180px, 0.8fr);
+  gap: 16px 32px;
+  padding: 20px 24px;
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
+}
+
+.lead-card h3 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+}
+
+.lead-card-meta {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.lead-tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 10px;
+  background: var(--paper);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.lead-tag-ai {
+  background: var(--mint);
+}
+
+.lead-card-ask h4 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.lead-card-ask ul + h4 {
+  margin-top: 12px;
+}
+
+.lead-card-ai {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.lead-card-ask ul {
+  margin: 0 0 8px;
+  padding-left: 1.2em;
+}
+
+.lead-card-note {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* "Why it was suggested": a plain toggle, not the default boxed one */
+.lead-card-why {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.lead-card-why summary {
+  width: fit-content;
+  font-size: 1rem;
+  color: var(--green);
+}
+
+.lead-card-why[open] summary {
+  margin-bottom: 6px;
+}
+
+.lead-card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Remove sits apart from the contact links, at the bottom right of the card,
+   so it reads as "remove this lead", not "remove these contacts" */
+.lead-card-actions .lead-remove {
+  margin-top: auto;
+  align-self: flex-end;
+}
+
+.lead-card-actions .lead-contact,
+.lead-card-actions .lead-card-note {
+  margin-bottom: 16px;
+}
+
+.lead-card-provider {
+  margin: 0;
+  font-weight: 700;
+}
+
+.lead-contact {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lead-contact li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+
+.lead-contact svg {
+  flex: none;
+}
+
+/* Activity no longer listed: one dashed grey line with Remove */
+.lead-card-gone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.lead-card-gone h3 {
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.lead-card-gone p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* Narrower screens: the three columns stack */
+@media (max-width: 900px) {
+  .lead-card {
+    grid-template-columns: 1fr;
+  }
+}

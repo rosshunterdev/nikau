@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 from app.schemas.enums import LeadSource
+from app.schemas.matching import LeadSession
 
 
 class LeadCreate(BaseModel):
@@ -41,6 +42,11 @@ class LeadDetail(BaseModel):
     activity_id: str
     activity_name: str | None = None
     provider_name: str | None = None
+    provider_phone: str | None = None
+    provider_email: str | None = None
+    suburb: str | None = None
+    sessions: list[LeadSession] = []
+    cost_per_session: float | None = None
     source: LeadSource
     why_fits: list[str] = []
     why_doesnt_cover: list[str] = []

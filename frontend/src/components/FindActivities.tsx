@@ -4,9 +4,9 @@ import { Check, Lock, RefreshCw, TriangleAlert } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import { clientFilters } from '../lib/catalogueFilters'
 import { formatDate } from '../lib/leads'
-import { DAYS, LEVELS, SUPPORT_WORKER_POLICY } from '../lib/options'
+import { activityMeta } from '../lib/activityFormat'
+import { LEVELS, SUPPORT_WORKER_POLICY } from '../lib/options'
 import type {
-  ActivitySession,
   ClientDetail,
   FindActivitiesResponse,
   Lead,
@@ -28,38 +28,6 @@ type View =
 
 // The first three suggestions show their reasons; the rest show them on request (hi-fi 05)
 const OPEN_REASONS = 3
-
-// "10:00" → "10am", "10:30" → "10:30am", "12:00" → "12pm"
-function formatTime(hhmm: string) {
-  const [h, m] = hhmm.split(':').map(Number)
-  const suffix = h < 12 ? 'am' : 'pm'
-  const hour = h % 12 === 0 ? 12 : h % 12
-  return m === 0 ? `${hour}${suffix}` : `${hour}:${String(m).padStart(2, '0')}${suffix}`
-}
-
-// "Tuesdays 10am–12pm"
-function formatSession(s: ActivitySession) {
-  const day = DAYS.find((d) => d.value === s.day)?.label ?? s.day
-  return `${day}s ${formatTime(s.start_time)}–${formatTime(s.end_time)}`
-}
-
-function formatCost(cost: number | null) {
-  if (cost === null) return null
-  if (cost === 0) return 'Free'
-  // "$15" for whole dollars, "$7.50" otherwise
-  return cost.toLocaleString('en-NZ', {
-    style: 'currency',
-    currency: 'NZD',
-    minimumFractionDigits: Number.isInteger(cost) ? 0 : 2,
-  })
-}
-
-// "Evans Bay · Tuesdays 10am–12pm · Free" (leaves out anything not known)
-function leadMeta(lead: MatchLead) {
-  return [lead.suburb, ...lead.sessions.map(formatSession), formatCost(lead.cost_per_session)]
-    .filter(Boolean)
-    .join(' · ')
-}
 
 // The small grey tags under the name: levels and the support worker policy
 function leadChips(lead: MatchLead) {
@@ -363,7 +331,7 @@ export default function FindActivities({ client }: Props) {
 
           <ol className="find-leads">
             {view.match.leads.map((lead, i) => {
-              const meta = leadMeta(lead)
+              const meta = activityMeta(lead)
               const chips = leadChips(lead)
               const reasons = (
                 <div className="find-why">
