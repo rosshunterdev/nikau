@@ -95,6 +95,11 @@ export type Lead = {
   activity_id: string
   activity_name: string | null // null = no longer listed
   provider_name: string | null
+  provider_phone: string | null
+  provider_email: string | null
+  suburb: string | null
+  sessions: ActivitySession[] // times as "10:00"
+  cost_per_session: number | null
   source: LeadSource
   why_fits: string[]
   why_doesnt_cover: string[]

@@ -5,16 +5,21 @@ from fastapi import APIRouter, HTTPException, Response, status
 from postgrest.exceptions import APIError
 
 from app.deps import Caller, CurrentCaller
+from app.matching import hhmm
 from app.schemas.leads import LeadCreate, LeadDetail, LeadWithClient
 
 router = APIRouter(tags=["leads"])
 logger = logging.getLogger(__name__)
 
-# The lead, plus the activity and provider names and who saved it.
-# If RLS hides the activity (consent withdrawn), "activities" comes back empty.
+# The lead, plus the activity (where, when, cost), its provider's name and contact
+# details, and who saved it. If RLS hides the activity (consent withdrawn), "activities"
+# comes back empty. SCRUM-129 fix 05: details for the Saved leads cards.
 LEAD_FIELDS = (
     "lead_id, client_id, activity_id, source, why_fits, why_doesnt_cover, why_ask, "
-    "match_request_id, saved_on, activities(name, providers(name)), "
+    "match_request_id, saved_on, "
+    "activities(name, archived_at, cost_per_session, suburbs(name), "
+    "activity_sessions(day, start_time, end_time), "
+    "providers(name, contact_phone, contact_email)), "
     "profiles(first_name, last_name)"
 )
 
@@ -30,8 +35,12 @@ def lines(text: str | None) -> list[str]:
 
 
 def to_lead(row: dict) -> dict:
-    """Reshape a database row (with its linked tables) into the LeadDetail shape."""
-    activity = row.pop("activities") or {}  # empty = no longer listed
+    """Reshape a database row (with its linked tables) into the LeadDetail shape.
+    An activity that's hidden (consent withdrawn) or archived is "no longer listed":
+    no name and no details, so the screen shows one grey line with Remove."""
+    activity = row.pop("activities") or {}
+    if activity.get("archived_at"):
+        activity = {}
     provider = activity.get("providers") or {}
     saver = row.pop("profiles") or {}
     saved_by = " ".join(n for n in (saver.get("first_name"), saver.get("last_name")) if n)
@@ -39,6 +48,14 @@ def to_lead(row: dict) -> dict:
         **row,
         "activity_name": activity.get("name"),
         "provider_name": provider.get("name"),
+        "provider_phone": provider.get("contact_phone"),
+        "provider_email": provider.get("contact_email"),
+        "suburb": (activity.get("suburbs") or {}).get("name"),
+        "sessions": [
+            {"day": s["day"], "start_time": hhmm(s["start_time"]), "end_time": hhmm(s["end_time"])}
+            for s in activity.get("activity_sessions") or []
+        ],
+        "cost_per_session": activity.get("cost_per_session"),
         "saved_by_name": saved_by or None,
         "why_fits": lines(row["why_fits"]),
         "why_doesnt_cover": lines(row["why_doesnt_cover"]),

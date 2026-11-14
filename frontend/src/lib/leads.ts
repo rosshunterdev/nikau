@@ -14,3 +14,11 @@ export function formatDate(iso: string) {
     year: 'numeric',
   })
 }
+
+// SCRUM-129 fix 05: tell the sidebar badge a lead was saved or removed, so the count
+// updates straight away instead of on the next page change
+export const LEADS_CHANGED = 'nikau:leads-changed'
+
+export function announceLeadsChanged() {
+  window.dispatchEvent(new Event(LEADS_CHANGED))
+}

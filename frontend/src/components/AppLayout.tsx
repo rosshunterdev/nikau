@@ -5,6 +5,7 @@ import { Users, SquareActivity, Building2, Bookmark, ScrollText } from "lucide-r
 import "./AppLayout.css";
 import logo from "../assets/nikau-lockup.svg";
 import { api } from "../lib/api";
+import { LEADS_CHANGED } from "../lib/leads";
 
 type Role = "support_worker" | "coordinator";
 
@@ -50,11 +51,18 @@ export default function AppLayout({ name, role, onSignOut }: Props) {
 
   // Saved leads count for the badge. Reloads on every page change, so it's
   // right after saving or removing a lead. If it fails, there's just no badge.
+  // Also reloads when a page says a lead was saved or removed (SCRUM-129 fix 05).
+  const [leadsChanged, setLeadsChanged] = useState(0);
+  useEffect(() => {
+    const bump = () => setLeadsChanged((n) => n + 1);
+    window.addEventListener(LEADS_CHANGED, bump);
+    return () => window.removeEventListener(LEADS_CHANGED, bump);
+  }, []);
   useEffect(() => {
     api<unknown[]>("/leads")
       .then((leads) => setLeadCount(leads.length))
       .catch(() => setLeadCount(undefined));
-  }, [pathname]);
+  }, [pathname, leadsChanged]);
 
   return (
     <div className="app">

@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from app.deps import Caller, get_caller
 from app.main import app
+from app.routers.leads import to_lead
 from app.schemas.leads import LeadCreate
 
 client = TestClient(app)
@@ -128,3 +129,59 @@ def test_expected_save_error_is_not_logged(db_fails_with, caplog):
     db_fails_with("23505")
     client.post(f"/clients/{SAM_ID}/leads", json=MANUAL)
     assert caplog.text == ""
+
+
+# --- SCRUM-129 fix 05: what a saved lead card shows ---
+
+def lead_row(activities):
+    return {
+        "lead_id": LEAD_ID,
+        "client_id": SAM_ID,
+        "activity_id": POTTERY_ID,
+        "source": "manual_search",
+        "why_fits": None,
+        "why_doesnt_cover": None,
+        "why_ask": None,
+        "match_request_id": None,
+        "saved_on": "2026-11-15T00:00:00Z",
+        "activities": activities,
+        "profiles": {"first_name": "Will", "last_name": "Worker"},
+    }
+
+
+def test_lead_carries_activity_and_provider_details():
+    lead = to_lead(
+        lead_row(
+            {
+                "name": "Pottery for beginners",
+                "archived_at": None,
+                "cost_per_session": 15,
+                "suburbs": {"name": "Wellington Central"},
+                "activity_sessions": [
+                    {"day": "thu", "start_time": "13:00:00", "end_time": "14:30:00"}
+                ],
+                "providers": {
+                    "name": "Wellington Community Arts",
+                    "contact_phone": "04 123 4567",
+                    "contact_email": "hello@example.com",
+                },
+            }
+        )
+    )
+    assert lead["activity_name"] == "Pottery for beginners"
+    assert (lead["suburb"], lead["cost_per_session"]) == ("Wellington Central", 15)
+    assert lead["sessions"] == [{"day": "thu", "start_time": "13:00", "end_time": "14:30"}]
+    assert (lead["provider_phone"], lead["provider_email"]) == ("04 123 4567", "hello@example.com")
+
+
+@pytest.mark.parametrize(
+    "activities",
+    [
+        None,  # hidden by RLS (provider withdrew consent)
+        {"name": "Pottery for beginners", "archived_at": "2026-10-01T00:00:00Z"},  # archived
+    ],
+)
+def test_lead_for_an_activity_no_longer_listed_has_no_details(activities):
+    lead = to_lead(lead_row(activities))
+    assert lead["activity_name"] is None
+    assert (lead["suburb"], lead["sessions"], lead["provider_phone"]) == (None, [], None)

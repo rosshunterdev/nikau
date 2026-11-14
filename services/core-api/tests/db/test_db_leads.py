@@ -38,3 +38,13 @@ def test_will_cannot_remove_alexs_lead(api, headers):
     finally:
         # Clean up, so the test can run again without a database reset
         api.delete(f"/clients/{ALEX}/leads/{lead_id}", headers=headers("cora"))
+
+
+def test_saved_leads_list_has_card_details(api, headers):
+    # SCRUM-129 fix 05: the Saved leads page gets where / when / cost and provider contacts
+    r = api.get("/leads", headers=headers("will"))
+    assert r.status_code == 200
+    pottery = next(lead for lead in r.json() if lead["activity_id"] == POTTERY)
+    for field in ("suburb", "sessions", "cost_per_session", "provider_phone", "provider_email"):
+        assert field in pottery
+    assert pottery["sessions"], "the seed gives Pottery a session"
