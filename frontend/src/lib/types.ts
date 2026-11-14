@@ -60,6 +60,12 @@ export type ActivitySummary = {
   cost_per_session: number | null
   consent_given: boolean
   updated_at: string
+  physical_demand: Level | null
+  sensory_load: Level | null
+  step_free_access: boolean | null
+  transport_options: string[]
+  sessions: ActivitySession[] // times as "10:00"
+  checked_at: string | null
 }
 
 export type ActivitySession = { day: Day; start_time: string; end_time: string }

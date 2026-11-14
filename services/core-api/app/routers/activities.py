@@ -7,6 +7,7 @@ from pydantic import StringConstraints
 
 from app.catalogue import PREFILTER_FIELDS, nz_year, search_catalogue
 from app.deps import Caller, CurrentCaller
+from app.matching import hhmm
 from app.schemas.activities import (
     ActivityCreate,
     ActivityDetail,
@@ -39,35 +40,50 @@ def to_detail(row: dict) -> dict:
     return row
 
 
+# SCRUM-129 fix 06: what a catalogue row shows (hi-fi 09)
+SUMMARY_FIELDS = (
+    "activity_id, name, cost_per_session, updated_at, checked_at, "
+    "physical_demand, sensory_load, step_free_access, transport_options, "
+    "providers(name, consent_given), suburbs(name), "
+    "activity_sessions(day, start_time, end_time)"
+)
+
+
+def to_summary(row: dict) -> dict:
+    """One catalogue row: provider and suburb names, consent, and the activity's
+    sessions (Monday first, times as "10:00") for the "where · when · cost" line."""
+    provider = row.get("providers") or {}
+    sessions = sorted(
+        row.get("activity_sessions") or [],
+        key=lambda s: (DAY_ORDER.index(s["day"]), s["start_time"]),
+    )
+    return {
+        **row,
+        "provider_name": provider.get("name"),
+        "suburb_name": (row.get("suburbs") or {}).get("name"),
+        # SCRUM-85: False = provider hasn't agreed to be listed (only coordinators see these)
+        "consent_given": provider.get("consent_given", False),
+        "sessions": [
+            {"day": s["day"], "start_time": hhmm(s["start_time"]), "end_time": hhmm(s["end_time"])}
+            for s in sessions
+        ],
+        "transport_options": row.get("transport_options") or [],
+    }
+
+
 @router.get("/activities", response_model=list[ActivitySummary])
 def list_activities(caller: CurrentCaller):
     """Activities in the catalogue, A to Z. Archived ones are left out.
     Coordinators see all; other staff only activities from consented providers (RLS)."""
     res = (
         caller.db.table("activities")
-        .select(
-            "activity_id, name, cost_per_session, updated_at, "
-            "providers(name, consent_given), suburbs(name)"
-        )
+        .select(SUMMARY_FIELDS)
         .is_("archived_at", "null")
         .order("name")
         .execute()
     )
+    return [to_summary(row) for row in res.data]
 
-    activities = []
-    for row in res.data:
-        provider = row.pop("providers") or {}
-        suburb = row.pop("suburbs") or {}
-        activities.append(
-            {
-                **row,
-                "provider_name": provider.get("name"),
-                "suburb_name": suburb.get("name"),
-                # SCRUM-85: False = provider hasn't agreed to be listed (only coordinators see these)
-                "consent_given": provider.get("consent_given", False),
-            }
-        )
-    return activities
 
 # "mon-morning", "sat-evening"...: one day and time the client is free
 AVAILABLE_PATTERN = r"^(mon|tue|wed|thu|fri|sat|sun)-(morning|afternoon|evening)$"
@@ -133,14 +149,7 @@ def search_activities(
         tags=[str(t) for t in tags or []],
     )
 
-    return [
-        {
-            **a,
-            "provider_name": (a.get("providers") or {}).get("name"),
-            "suburb_name": (a.get("suburbs") or {}).get("name"),
-        }
-        for a in kept
-    ]
+    return [to_summary(a) for a in kept]
 
 
 @router.get("/activities/{activity_id}", response_model=ActivityDetail)

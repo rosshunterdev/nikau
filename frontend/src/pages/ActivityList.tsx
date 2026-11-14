@@ -1,17 +1,58 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { Plus } from 'lucide-react'
+import { Check, Plus } from 'lucide-react'
 import CatalogueFilters from '../components/CatalogueFilters'
 import { api, ApiError } from '../lib/api'
+import { activityMeta } from '../lib/activityFormat'
 import { filtersOnly } from '../lib/catalogueFilters'
+import { announceLeadsChanged, formatDate } from '../lib/leads'
+import { ACTIVITY_TRANSPORT, LEVELS } from '../lib/options'
 import type { ActivitySummary, ClientDetail, Lead } from '../lib/types'
 import { useRole } from '../lib/useRole'
+import './ActivityList.css'
 
-// Show a cost like "$15.00", or "Free" for 0
-function formatCost(cost: number | null) {
-  if (cost === null) return 'Not known'
-  if (cost === 0) return 'Free'
-  return cost.toLocaleString('en-NZ', { style: 'currency', currency: 'NZD' })
+// SCRUM-129 fix 06 (hi-fi 09): results 10 at a time, and three ways to sort them
+const PAGE_SIZE = 10
+type Sort = 'name' | 'cost' | 'checked'
+const SORTS: { value: Sort; label: string }[] = [
+  { value: 'name', label: 'A to Z' },
+  { value: 'cost', label: 'Cost, lowest first' },
+  { value: 'checked', label: 'Recently checked' },
+]
+
+// Unknown cost or check date goes last, whichever way it's sorted
+function sorted(list: ActivitySummary[], sort: Sort) {
+  const copy = [...list]
+  if (sort === 'cost') {
+    copy.sort((a, b) => (a.cost_per_session ?? Infinity) - (b.cost_per_session ?? Infinity))
+  } else if (sort === 'checked') {
+    copy.sort((a, b) => (b.checked_at ?? '').localeCompare(a.checked_at ?? ''))
+  }
+  return copy // 'name': the API already sends A to Z
+}
+
+// The small grey tags on a row: levels, step-free and how to get there
+function chips(a: ActivitySummary) {
+  const level = (value: string | null) =>
+    LEVELS.find((l) => l.value === value)?.label.toLowerCase()
+  const out: string[] = []
+  if (a.physical_demand) out.push(`Physical: ${level(a.physical_demand)}`)
+  if (a.sensory_load) out.push(`Sensory: ${level(a.sensory_load)}`)
+  if (a.step_free_access) out.push('Step-free')
+  for (const t of a.transport_options) {
+    const label = ACTIVITY_TRANSPORT.find((o) => o.value === t)?.label
+    if (label) out.push(label)
+  }
+  return out
+}
+
+// "22 Sep" (the year only when it isn't this year)
+function checkedOn(iso: string) {
+  const d = new Date(iso)
+  const thisYear = d.getFullYear() === new Date().getFullYear()
+  return thisYear
+    ? d.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })
+    : formatDate(iso)
 }
 
 type Result = { filters: string; activities?: ActivitySummary[]; error?: string }
@@ -115,6 +156,7 @@ export default function ActivityList() {
       })
       markSaved(a.activity_id)
       setSaveMessage(`Saved ${a.name} for ${forClient.name}.`)
+      announceLeadsChanged()
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
         // Already saved (e.g. in another tab): show it as saved, not as an error
@@ -128,10 +170,20 @@ export default function ActivityList() {
     }
   }
 
+  const [sort, setSort] = useState<Sort>('name')
+
   return (
     <section>
-      <div className="page-header">
-        <h1 className="page-title">Activity catalogue</h1>
+      <div className="page-header catalogue-header">
+        <div>
+          <h1 className="page-title">Activity catalogue</h1>
+          <p className="catalogue-mi" lang="mi">
+            Rārangi ngohe
+          </p>
+          <p className="catalogue-intro">
+            Every activity here has been checked by a person before it's listed.
+          </p>
+        </div>
         {isCoordinator && (
           <Link to="/activities/new" className="button button-outline">
             <Plus size={18} aria-hidden="true" />
@@ -143,87 +195,196 @@ export default function ActivityList() {
       {/* SCRUM-85: who the catalogue is open for */}
       {clientId &&
         (forClient ? (
-          <p>
-            Finding activities for <strong>{forClient.name}</strong>.{' '}
+          <div className="catalogue-for">
+            <p>
+              Finding activities for <strong>{forClient.name}</strong>. Filters are set from{' '}
+              {forClient.name}'s profile.
+            </p>
             <Link to={`/clients/${forClient.id}`}>Back to {forClient.name}'s profile</Link>
-          </p>
+          </div>
         ) : (
           clientError && <p role="alert">{clientError}</p>
         ))}
 
-      {/* key: a fresh form only when the address changes from outside the form */}
-      <CatalogueFilters key={formKey} params={searchParams} onSearch={handleSearch} />
+      <div className="catalogue-layout">
+        {/* key: a fresh form only when the address changes from outside the form */}
+        <CatalogueFilters key={formKey} params={searchParams} onSearch={handleSearch} />
 
-      {searching && activities && (
-        <p role="status">
-          {activities.length} {activities.length === 1 ? 'activity matches' : 'activities match'}.
-          Activities with unknown details are included, so check them with the provider.
-        </p>
-      )}
+        <div className="catalogue-results">
+          <div className="catalogue-results-head">
+            {/* Screen readers hear the new count after each search */}
+            <p role="status" className="catalogue-count">
+              {activities &&
+                (searching ? (
+                  <>
+                    <strong>
+                      {activities.length} {activities.length === 1 ? 'activity' : 'activities'}
+                    </strong>{' '}
+                    match these filters
+                  </>
+                ) : (
+                  <strong>
+                    {activities.length} {activities.length === 1 ? 'activity' : 'activities'}
+                  </strong>
+                ))}
+            </p>
+            <label className="catalogue-sort">
+              Sort
+              <select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+                {SORTS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
-      {/* SCRUM-85: result of the last save, announced to screen readers */}
-      {saveMessage && <p role="status">{saveMessage}</p>}
+          {/* SCRUM-85: result of the last save, announced to screen readers */}
+          <p role="status" className={saveMessage ? 'catalogue-saved' : 'visually-hidden'}>
+            {saveMessage && (
+              <>
+                <Check size={18} aria-hidden="true" /> {saveMessage}
+              </>
+            )}
+          </p>
 
-      {error && <p role="alert">{error}</p>}
-      {!error && activities === null && <p role="status">Loading activities…</p>}
-      {activities?.length === 0 &&
-        (searching ? (
-          <p>No activities match these filters. Try removing one.</p>
-        ) : (
-          <p>{isCoordinator ? 'No activities yet. Add your first one.' : 'No activities yet.'}</p>
-        ))}
+          {error && <p role="alert">{error}</p>}
+          {!error && activities === null && <p>Loading activities…</p>}
+          {activities?.length === 0 &&
+            (searching ? (
+              <p className="catalogue-empty">No activities match these filters. Try removing one.</p>
+            ) : (
+              <p className="catalogue-empty">
+                {isCoordinator ? 'No activities yet. Add your first one.' : 'No activities yet.'}
+              </p>
+            ))}
 
-      {activities && activities.length > 0 && (
-        <div className="table-scroll" tabIndex={0} role="region" aria-label="Activities">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Activity</th>
-              <th scope="col">Provider</th>
-              <th scope="col">Suburb</th>
-              <th scope="col">Cost per session</th>
-              <th scope="col"><span className="visually-hidden">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {activities.map((a) => (
-              <tr key={a.activity_id}>
-                <td>{a.name}</td>
-                <td>{a.provider_name}</td>
-                <td>{a.suburb_name ?? '—'}</td>
-                <td>{formatCost(a.cost_per_session)}</td>
-                <td>
-                  {/* SCRUM-85: save for the client, or say why it can't be saved */}
-                  {forClient &&
-                    (!a.consent_given ? (
-                      <span>Needs provider consent</span>
-                    ) : forClient.saved.has(a.activity_id) ? (
-                      <span>
-                        Saved<span aria-hidden="true"> ✓</span>
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => saveLead(a)}
-                        disabled={savingId === a.activity_id}
-                        aria-label={`Save as lead: ${a.name} for ${forClient.name}`}
-                      >
-                        {savingId === a.activity_id ? 'Saving…' : 'Save as lead'}
-                      </button>
-                    ))}{' '}
+          {activities && activities.length > 0 && (
+            // key: a new search or sort starts again at the first 10
+            <CatalogueRows
+              key={`${filters}|${sort}`}
+              activities={sorted(activities, sort)}
+              isCoordinator={isCoordinator}
+              forClient={forClient}
+              savingId={savingId}
+              onSave={saveLead}
+            />
+          )}
+          {/* Under the list, so the list lines up with the filter panel */}
+          {searching && activities && activities.length > 0 && (
+            <p className="catalogue-note">
+              Activities with unknown details are included, so check them with the provider.
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+type RowsProps = {
+  activities: ActivitySummary[]
+  isCoordinator: boolean
+  forClient?: ForClient
+  savingId?: string
+  onSave: (a: ActivitySummary) => void
+}
+
+// The results list, 10 at a time with "Show more"
+function CatalogueRows({ activities, isCoordinator, forClient, savingId, onSave }: RowsProps) {
+  const [shown, setShown] = useState(PAGE_SIZE)
+  // After "Show more", move keyboard focus to the first new activity
+  const focusIndex = useRef<number | null>(null)
+  const links = useRef<(HTMLAnchorElement | null)[]>([])
+  useEffect(() => {
+    if (focusIndex.current !== null) {
+      links.current[focusIndex.current]?.focus()
+      focusIndex.current = null
+    }
+  }, [shown])
+
+  const left = activities.length - shown
+  return (
+    <>
+      <ul className="catalogue-list">
+        {activities.slice(0, shown).map((a, i) => {
+          const meta = activityMeta({
+            suburb: a.suburb_name,
+            sessions: a.sessions,
+            cost_per_session: a.cost_per_session,
+          })
+          const tags = chips(a)
+          return (
+            <li key={a.activity_id} className="catalogue-row">
+              <div className="catalogue-row-main">
+                <h2>
                   <Link
                     to={`/activities/${a.activity_id}`}
-                    aria-label={`${isCoordinator ? 'Edit' : 'View'} ${a.name}`}
+                    ref={(el) => {
+                      links.current[i] = el
+                    }}
                   >
-                    {isCoordinator ? 'Edit' : 'View'}
+                    {a.name}
                   </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </h2>
+                {meta && <p className="catalogue-row-meta">{meta}</p>}
+                <p className="catalogue-row-meta">
+                  {a.provider_name}
+                  {a.checked_at && ` · Checked ${checkedOn(a.checked_at)}`}
+                </p>
+              </div>
+              {tags.length > 0 && (
+                <ul className="catalogue-chips" aria-label={`About ${a.name}`}>
+                  {tags.map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
+              )}
+              <div className="catalogue-row-actions">
+                {/* SCRUM-85: save for the client, or say why it can't be saved */}
+                {forClient &&
+                  (!a.consent_given ? (
+                    <span className="catalogue-row-note">Needs provider consent</span>
+                  ) : forClient.saved.has(a.activity_id) ? (
+                    <span className="catalogue-row-saved">
+                      <Check size={18} aria-hidden="true" /> Saved
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="button-outline"
+                      onClick={() => onSave(a)}
+                      disabled={savingId === a.activity_id}
+                      aria-label={`Save lead: ${a.name} for ${forClient.name}`}
+                    >
+                      {savingId === a.activity_id ? 'Saving…' : 'Save lead'}
+                    </button>
+                  ))}
+                {isCoordinator && (
+                  <Link to={`/activities/${a.activity_id}`} aria-label={`Edit ${a.name}`}>
+                    Edit
+                  </Link>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+      {left > 0 && (
+        <div className="catalogue-more">
+          <button
+            type="button"
+            className="button-outline"
+            onClick={() => {
+              focusIndex.current = shown
+              setShown((n) => n + PAGE_SIZE)
+            }}
+          >
+            Show more ({left})
+          </button>
         </div>
       )}
-    </section>
+    </>
   )
 }
