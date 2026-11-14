@@ -36,6 +36,7 @@ export type ClientDetail = {
   interests: string[]
   availability: { day: Day; slot: Slot }[]
   updated_at: string
+  assigned_to: string[]
 }
 
 // Providers and activities (match app/schemas/providers.py and activities.py)

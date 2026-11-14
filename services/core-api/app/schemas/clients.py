@@ -61,6 +61,7 @@ class ClientDetail(BaseModel):
     interests: list[str] = []  # tag ids
     availability: list[AvailabilitySlot] = []
     updated_at: datetime
+    assigned_to: list[str] = []
 
 
 class ClientCreate(BaseModel):
