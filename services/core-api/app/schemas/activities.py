@@ -21,6 +21,12 @@ class ActivitySession(BaseModel):
         if self.end_time <= self.start_time:
             raise ValueError("A session must end after it starts")
         return self
+    
+
+class CatalogueSession(BaseModel):
+    day: str
+    start_time: str  # "10:00"
+    end_time: str
 
 
 class ActivitySummary(BaseModel):
@@ -33,7 +39,13 @@ class ActivitySummary(BaseModel):
     cost_per_session: float | None = None
     updated_at: datetime
     consent_given: bool  # False = provider hasn't agreed to be listed (coordinators only see these)
-
+    physical_demand: Level | None = None
+    sensory_load: Level | None = None
+    step_free_access: bool | None = None
+    transport_options: list[str] = []
+    sessions: list[CatalogueSession] = []  # times as "10:00"
+    checked_at: date | None = None
+    
 
 class ActivityDetail(BaseModel):
     """One activity in full, for the edit form. Empty values mean 'not known yet'."""

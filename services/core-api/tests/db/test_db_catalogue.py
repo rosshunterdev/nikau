@@ -20,3 +20,14 @@ def test_search_leaves_out_archived_and_non_consented(api, headers, who):
     assert GARDEN in found  # control: the search does return activities
     assert POTTERY_TASTER not in found
     assert BEACH_WALK not in found
+
+
+@pytest.mark.parametrize("path", ["/activities", "/activities/search"])
+def test_catalogue_rows_have_sessions_and_levels(api, headers, path):
+    # SCRUM-129 fix 06: the list and the search both send what a catalogue row shows
+    r = api.get(path, headers=headers("will"))
+    assert r.status_code == 200, r.text
+    garden = next(a for a in r.json() if a["activity_id"] == GARDEN)
+    assert garden["sessions"], "the catalogue seed gives the garden working bee a session"
+    for field in ("physical_demand", "sensory_load", "checked_at", "transport_options"):
+        assert field in garden

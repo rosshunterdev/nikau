@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from app.deps import get_caller
 from app.main import app
 from app.routers.activities import router as activities_router
+from app.routers.activities import to_summary
 from app.schemas.activities import ActivityCreate, ActivitySession, ActivityUpdate
 
 client = TestClient(app)
@@ -114,3 +115,37 @@ def test_search_checks_each_available_item():
 
 def test_find_activities_requires_sign_in():
     assert client.post(f"/clients/{POTTERY_ID}/match").status_code == 401
+
+
+# --- SCRUM-129 fix 06: what a catalogue row shows ---
+
+def test_catalogue_row_has_names_levels_and_sessions_in_week_order():
+    row = to_summary(
+        {
+            "activity_id": POTTERY_ID,
+            "name": "Pottery for beginners",
+            "providers": {"name": "Wellington Community Arts", "consent_given": True},
+            "suburbs": {"name": "Wellington Central"},
+            "physical_demand": "low",
+            "transport_options": None,
+            "activity_sessions": [
+                {"day": "thu", "start_time": "13:00:00", "end_time": "14:30:00"},
+                {"day": "mon", "start_time": "10:00:00", "end_time": "11:00:00"},
+            ],
+        }
+    )
+    assert (row["provider_name"], row["suburb_name"]) == (
+        "Wellington Community Arts",
+        "Wellington Central",
+    )
+    assert row["consent_given"] is True
+    assert row["physical_demand"] == "low"
+    assert row["transport_options"] == []
+    assert [s["day"] for s in row["sessions"]] == ["mon", "thu"]
+    assert row["sessions"][1] == {"day": "thu", "start_time": "13:00", "end_time": "14:30"}
+
+
+def test_catalogue_row_without_provider_means_no_consent():
+    row = to_summary({"activity_id": POTTERY_ID, "name": "Pottery", "providers": None})
+    assert row["consent_given"] is False
+    assert row["sessions"] == []

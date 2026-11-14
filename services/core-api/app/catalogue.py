@@ -11,11 +11,11 @@ from app.prefilter import prefilter
 
 # Everything the pre-filter rules read, plus what the activity list shows
 PREFILTER_FIELDS = (
-    "activity_id, name, suburb_id, cost_per_session, updated_at, archived_at, "
+    "activity_id, name, suburb_id, cost_per_session, updated_at, archived_at, checked_at, "
     "physical_demand, sensory_load, step_free_access, min_age, max_age, "
     "transport_options, support_worker_policy, "
     "providers(name, consent_given), suburbs(name), "
-    "activity_sessions(day, start_time), activity_tags(tag_id)"
+    "activity_sessions(day, start_time, end_time), activity_tags(tag_id)"
 )
 
 
