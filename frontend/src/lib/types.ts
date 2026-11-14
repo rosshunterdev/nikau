@@ -86,6 +86,13 @@ export type ActivityDetail = {
   support_worker_policy: string | null
   checked_at: string | null
   checked_by: string | null
+  // SCRUM-129 fix 07: for the read-only Activity detail page
+  checked_by_name: string | null
+  provider_name: string | null
+  provider_phone: string | null
+  provider_email: string | null
+  provider_website: string | null
+  suburb_name: string | null
   tags: string[]
   sessions: ActivitySession[]
   updated_at: string

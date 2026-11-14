@@ -66,7 +66,9 @@ export default function ClientLeads({ clientId, clientName }: Props) {
                   <div>
                     <h3>
                       {lead.activity_name ? (
-                        <Link to={`/activities/${lead.activity_id}`}>{lead.activity_name}</Link>
+                        <Link to={`/activities/${lead.activity_id}?client=${clientId}`}>
+                          {lead.activity_name}
+                        </Link>
                       ) : (
                         name
                       )}

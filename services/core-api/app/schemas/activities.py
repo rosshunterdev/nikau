@@ -65,6 +65,13 @@ class ActivityDetail(BaseModel):
     support_worker_policy: SupportWorkerPolicy | None = None
     checked_at: date | None = None
     checked_by: str | None = None  # set by the database (SCRUM-82)
+    # SCRUM-129 fix 07: for the read-only Activity detail page
+    checked_by_name: str | None = None
+    provider_name: str | None = None
+    provider_phone: str | None = None
+    provider_email: str | None = None
+    provider_website: str | None = None
+    suburb_name: str | None = None
     tags: list[str] = []  # tag ids
     sessions: list[ActivitySession] = []
     updated_at: datetime

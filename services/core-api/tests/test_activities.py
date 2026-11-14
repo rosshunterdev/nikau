@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from app.deps import get_caller
 from app.main import app
 from app.routers.activities import router as activities_router
-from app.routers.activities import to_summary
+from app.routers.activities import to_detail, to_summary
 from app.schemas.activities import ActivityCreate, ActivitySession, ActivityUpdate
 
 client = TestClient(app)
@@ -149,3 +149,45 @@ def test_catalogue_row_without_provider_means_no_consent():
     row = to_summary({"activity_id": POTTERY_ID, "name": "Pottery", "providers": None})
     assert row["consent_given"] is False
     assert row["sessions"] == []
+
+
+# --- SCRUM-129 fix 07: what the Activity detail page shows ---
+
+def test_detail_has_provider_contacts_suburb_and_checker_name():
+    row = to_detail(
+        {
+            "activity_id": POTTERY_ID,
+            "transport_options": None,
+            "activity_tags": [{"tag_id": "t1"}],
+            "activity_sessions": [],
+            "providers": {
+                "name": "Wellington Community Arts",
+                "contact_phone": "04 555 0110",
+                "contact_email": "hello@example.com",
+                "website": "https://example.com",
+            },
+            "suburbs": {"name": "Wellington Central"},
+            "checker": {"first_name": "Cora", "last_name": "Coordinator"},
+        }
+    )
+    assert row["provider_name"] == "Wellington Community Arts"
+    assert (row["provider_phone"], row["provider_email"]) == ("04 555 0110", "hello@example.com")
+    assert row["provider_website"] == "https://example.com"
+    assert row["suburb_name"] == "Wellington Central"
+    assert row["checked_by_name"] == "Cora Coordinator"
+    assert "providers" not in row and "checker" not in row
+
+
+def test_detail_without_checker_or_provider_has_empty_names():
+    row = to_detail(
+        {
+            "activity_id": POTTERY_ID,
+            "transport_options": [],
+            "activity_tags": [],
+            "activity_sessions": [],
+            "providers": None,
+            "suburbs": None,
+            "checker": None,
+        }
+    )
+    assert (row["provider_name"], row["suburb_name"], row["checked_by_name"]) == (None, None, None)

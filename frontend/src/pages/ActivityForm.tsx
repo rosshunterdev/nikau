@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { api, ApiError } from '../lib/api'
 import { ACTIVITY_TRANSPORT, DAYS, LEVELS, SUPPORT_WORKER_POLICY } from '../lib/options'
 import type { ActivityDetail, Day, Provider, Suburb, Tag } from '../lib/types'
@@ -183,7 +183,8 @@ function ActivityForm({ id }: { id?: string }) {
         method: id ? 'PATCH' : 'POST',
         body: JSON.stringify(toPayload(form)),
       })
-      navigate('/activities')
+      // SCRUM-129 fix 07: after editing, back to the activity's page
+      navigate(id ? `/activities/${id}` : '/activities')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Can't reach the server. Try again.")
     } finally {
@@ -193,6 +194,8 @@ function ActivityForm({ id }: { id?: string }) {
 
   // Workers can't add activities
   if (!id && !canEdit) return <p>Page not found.</p>
+  // Only coordinators edit: everyone else reads the activity's page (SCRUM-129 fix 07)
+  if (id && !canEdit) return <Navigate to={`/activities/${id}`} replace />
 
   const councils = [...new Set(suburbs.map((s) => s.territorial_authority))].sort()
 
@@ -209,7 +212,9 @@ function ActivityForm({ id }: { id?: string }) {
   return (
     <form onSubmit={handleSubmit}>
       <h1>{!id ? 'Add activity' : canEdit ? 'Edit activity' : form.name}</h1>
-      <Link to="/activities">Back to activities</Link>
+      <Link to={id ? `/activities/${id}` : '/activities'}>
+        {id ? 'Back to the activity' : 'Back to activities'}
+      </Link>
 
       {/* disabled here disables every input inside: read-only for workers */}
       <fieldset disabled={!canEdit} className="form-body">
