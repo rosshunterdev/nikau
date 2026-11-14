@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
-import { Check, Globe, Mail, Phone } from 'lucide-react'
+import { Check, CircleHelp, Globe, Mail, Phone } from 'lucide-react'
 import LevelBars from '../components/LevelBars'
 import { api, ApiError } from '../lib/api'
 import { formatCost, formatSession } from '../lib/activityFormat'
 import { announceLeadsChanged, formatDate } from '../lib/leads'
-import { ACTIVITY_TRANSPORT, LEVELS, SUPPORT_WORKER_POLICY } from '../lib/options'
+import {
+  ACTIVITY_TRANSPORT,
+  CHECK_METHOD,
+  GROUP_SIZE,
+  JOINING,
+  LEVELS,
+  STAFF_SUPPORT,
+  SUPPORT_WORKER_POLICY,
+} from '../lib/options'
 import type { ActivityDetail as Activity, ClientSummary, Lead, Tag } from '../lib/types'
 import { useRole } from '../lib/useRole'
 import './ClientForm.css' // breadcrumb
@@ -30,6 +38,11 @@ function ages(a: Activity) {
   if (a.min_age !== null) return `${a.min_age} and over`
   if (a.max_age !== null) return `Up to ${a.max_age}`
   return 'All ages'
+}
+
+// An option's label, e.g. 'drop_in' → 'Drop in'
+function labelOf(options: { value: string; label: string }[], value: string | null) {
+  return options.find((o) => o.value === value)?.label ?? null
 }
 
 function levelLabel(level: string | null) {
@@ -107,8 +120,29 @@ export default function ActivityDetail() {
     .join(', ')
   const policy = SUPPORT_WORKER_POLICY.find((p) => p.value === activity.support_worker_policy)
   const cost = formatCost(activity.cost_per_session)
-  const hasContact =
-    activity.provider_phone || activity.provider_email || activity.provider_website
+  // "18 Sep 2026 by phone call with the provider, by Cora Coordinator" (SCRUM-129 fix 08)
+  const method = labelOf(CHECK_METHOD, activity.check_method)
+  const checkedLine = [
+    activity.checked_at && formatDate(activity.checked_at),
+    method && `(${method.toLowerCase()})`,
+    activity.checked_by_name && `by ${activity.checked_by_name}`,
+  ]
+    .filter(Boolean)
+    .join(' ')
+  // "Bus 2 · 12 min walk from the stop"
+  const bus = [
+    activity.bus_routes && `Bus ${activity.bus_routes}`,
+    activity.walk_from_stop_minutes !== null &&
+      `${activity.walk_from_stop_minutes} min walk from the stop`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  const staff = [
+    labelOf(STAFF_SUPPORT, activity.staff_support),
+    activity.staff_experience === true && 'Staff have disability experience',
+    activity.staff_experience === false && 'Staff have no disability experience',
+  ].filter(Boolean)
+  const hasContact = activity.provider_phone || activity.provider_email || activity.provider_website
 
   async function save() {
     if (!activity || !client) return
@@ -117,7 +151,10 @@ export default function ActivityDetail() {
     try {
       await api<Lead>(`/clients/${client.client_id}/leads`, {
         method: 'POST',
-        body: JSON.stringify({ activity_id: activity.activity_id, source: 'manual_search' }),
+        body: JSON.stringify({
+          activity_id: activity.activity_id,
+          source: 'manual_search',
+        }),
       })
       setSavedFor((s) => new Set(s).add(client.client_id))
       setMessage(`Saved ${activity.name} for ${client.preferred_name}.`)
@@ -182,7 +219,7 @@ export default function ActivityDetail() {
                   setMessage(undefined)
                 }}
               >
-                <option value="">Select client</option>
+                <option value="">Save for which client?</option>
                 {clients.map((c) => (
                   <option key={c.client_id} value={c.client_id}>
                     {c.preferred_name}
@@ -221,17 +258,20 @@ export default function ActivityDetail() {
       <dl className="profile-facts">
         <div>
           <dt>Checked</dt>
-          <dd>
-            {activity.checked_at
-              ? `${formatDate(activity.checked_at)}${activity.checked_by_name ? ` by ${activity.checked_by_name}` : ''}`
-              : 'Not checked yet'}
-          </dd>
+          <dd>{activity.checked_at ? checkedLine : 'Not checked yet'}</dd>
         </div>
         <div className="profile-facts-muted">
           <dt>Listing updated</dt>
           <dd>{formatDate(activity.updated_at)}</dd>
         </div>
       </dl>
+
+      {activity.archived_at && (
+        <p className="activity-archived">
+          This activity was archived on {formatDate(activity.archived_at)}. It's no longer in the
+          catalogue or suggestions.
+        </p>
+      )}
 
       <div className="profile-grid">
         <div className="profile-column">
@@ -257,11 +297,22 @@ export default function ActivityDetail() {
               </div>
               <div>
                 <dt>Where</dt>
-                <dd>{activity.suburb_name ?? NOT_KNOWN}</dd>
+                <dd>
+                  {[activity.street_address, activity.suburb_name].filter(Boolean).join(', ') ||
+                    NOT_KNOWN}
+                </dd>
               </div>
               <div>
                 <dt>Cost</dt>
                 <dd>{cost ? (cost === 'Free' ? 'Free' : `${cost} a session`) : NOT_KNOWN}</dd>
+              </div>
+              <div>
+                <dt>Joining</dt>
+                <dd>{labelOf(JOINING, activity.joining) ?? NOT_KNOWN}</dd>
+              </div>
+              <div>
+                <dt>Group size</dt>
+                <dd>{labelOf(GROUP_SIZE, activity.group_size) ?? NOT_KNOWN}</dd>
               </div>
               <div>
                 <dt>Ages</dt>
@@ -271,7 +322,10 @@ export default function ActivityDetail() {
                 <dt>Contact</dt>
                 <dd>
                   {hasContact ? (
-                    <ul className="activity-contact" aria-label={`Contact ${activity.provider_name ?? 'the provider'}`}>
+                    <ul
+                      className="activity-contact"
+                      aria-label={`Contact ${activity.provider_name ?? 'the provider'}`}
+                    >
                       {activity.provider_phone && (
                         <li>
                           <Phone size={18} aria-hidden="true" />
@@ -292,7 +346,8 @@ export default function ActivityDetail() {
                         <li>
                           <Globe size={18} aria-hidden="true" />
                           <a href={activity.provider_website} target="_blank" rel="noreferrer">
-                            Website<span className="visually-hidden"> (opens in a new tab)</span>
+                            Website
+                            <span className="visually-hidden"> (opens in a new tab)</span>
                           </a>
                         </li>
                       )}
@@ -306,47 +361,76 @@ export default function ActivityDetail() {
           </section>
         </div>
 
-        <section className="profile-card" aria-labelledby="access-heading">
-          <CardHeading id="access-heading" en="Access" />
-          <dl className="profile-needs">
-            <div>
-              <dt>Physical demand</dt>
-              <dd>
-                <strong className="profile-level">
-                  <LevelBars level={activity.physical_demand} />
-                  {levelLabel(activity.physical_demand)}
-                </strong>
-              </dd>
-            </div>
-            <div>
-              <dt>Sensory load</dt>
-              <dd>
-                <strong className="profile-level">
-                  <LevelBars level={activity.sensory_load} />
-                  {levelLabel(activity.sensory_load)}
-                </strong>
-              </dd>
-            </div>
-            <div>
-              <dt>Getting there</dt>
-              <dd>{transport || NOT_KNOWN}</dd>
-            </div>
-            <div>
-              <dt>Step-free</dt>
-              <dd>
-                {activity.step_free_access === null
-                  ? NOT_KNOWN
-                  : activity.step_free_access
-                    ? 'Yes'
-                    : 'No'}
-              </dd>
-            </div>
-            <div>
-              <dt>Support worker</dt>
-              <dd>{policy?.label ?? NOT_KNOWN}</dd>
-            </div>
-          </dl>
-        </section>
+        <div className="profile-column">
+          <section className="profile-card" aria-labelledby="access-heading">
+            <CardHeading id="access-heading" en="Access" />
+            <dl className="profile-needs">
+              <div>
+                <dt>Physical demand</dt>
+                <dd>
+                  <strong className="profile-level">
+                    <LevelBars level={activity.physical_demand} />
+                    {levelLabel(activity.physical_demand)}
+                  </strong>
+                  {activity.physical_notes && (
+                    <span className="profile-note">{activity.physical_notes}</span>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Sensory load</dt>
+                <dd>
+                  <strong className="profile-level">
+                    <LevelBars level={activity.sensory_load} />
+                    {levelLabel(activity.sensory_load)}
+                  </strong>
+                  {activity.sensory_notes && (
+                    <span className="profile-note">{activity.sensory_notes}</span>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Getting there</dt>
+                <dd>
+                  {transport || (bus ? null : NOT_KNOWN)}
+                  {bus && <span className="profile-note">{bus}</span>}
+                </dd>
+              </div>
+              <div>
+                <dt>Step-free</dt>
+                <dd>
+                  {activity.step_free_access === null
+                    ? NOT_KNOWN
+                    : activity.step_free_access
+                      ? 'Yes'
+                      : 'No'}
+                </dd>
+              </div>
+              <div>
+                <dt>Support and staffing</dt>
+                <dd>
+                  {policy?.label ?? 'Support worker policy not known'}
+                  {staff.map((line) => (
+                    <span key={String(line)} className="profile-note">
+                      {line}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          {/* What the coordinator couldn't confirm (SCRUM-129 fix 08) */}
+          {activity.not_in_listing && (
+            <section className="activity-ask" aria-labelledby="ask-heading">
+              <h2 id="ask-heading">
+                <CircleHelp size={18} aria-hidden="true" />
+                Not in the listing, ask the provider
+              </h2>
+              <p>{activity.not_in_listing}</p>
+            </section>
+          )}
+        </div>
       </div>
     </>
   )

@@ -46,3 +46,29 @@ export const SUPPORT_WORKER_POLICY = [
   { value: 'attend_with_charge', label: 'Worker pays to attend' },
   { value: 'not_allowed', label: 'Workers not allowed' },
 ]
+
+// SCRUM-129 fix 08: the rest of the activity form (hi-fi 11)
+export const JOINING = [
+  { value: 'drop_in', label: 'Drop in' },
+  { value: 'book_ahead', label: 'Book ahead' },
+  { value: 'term_enrolment', label: 'Term enrolment' },
+  { value: 'waitlist', label: 'Waitlist' },
+]
+
+export const GROUP_SIZE = [
+  { value: 'under_10', label: 'Under 10' },
+  { value: '10_to_20', label: '10 to 20' },
+  { value: 'over_20', label: 'Over 20' },
+]
+
+export const STAFF_SUPPORT = [
+  { value: 'staff_can_assist', label: 'Staff can assist' },
+  { value: 'bring_own_support', label: 'Must bring own support' },
+]
+
+export const CHECK_METHOD = [
+  { value: 'provider_website', label: 'Provider website' },
+  { value: 'phone_call', label: 'Phone call' },
+  { value: 'email', label: 'Email' },
+  { value: 'visited_in_person', label: 'Visited in person' },
+]

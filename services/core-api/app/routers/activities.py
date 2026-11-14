@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
@@ -22,7 +23,11 @@ router = APIRouter(tags=["activities"])
 ACTIVITY_FIELDS = (
     "activity_id, provider_id, name, description, suburb_id, physical_demand, "
     "sensory_load, step_free_access, cost_per_session, min_age, max_age, "
-    "transport_options, support_worker_policy, checked_at, checked_by, updated_at"
+    "transport_options, support_worker_policy, checked_at, checked_by, updated_at, "
+    # SCRUM-129 fix 08: the rest of the form (hi-fi 11)
+    "street_address, joining, group_size, physical_notes, sensory_notes, bus_routes, "
+    "walk_from_stop_minutes, staff_support, staff_experience, not_in_listing, check_method, "
+    "archived_at"
 )
 
 # Days in week order, so sessions sort Monday first (not alphabetically)
@@ -268,3 +273,20 @@ def update_activity(activity_id: UUID, body: ActivityUpdate, caller: CurrentCall
         raise save_error(e)
 
     return get_activity(activity_id, caller)
+
+
+@router.post("/activities/{activity_id}/archive", status_code=status.HTTP_204_NO_CONTENT)
+def archive_activity(activity_id: UUID, caller: CurrentCaller):
+    """SCRUM-129 fix 08: take an activity out of the catalogue. Coordinators only.
+    Archived, not deleted: saved leads still point to it and show "no longer listed"."""
+    get_activity(activity_id, caller)  # 404 if you can't see it
+    require_coordinator(caller)
+    res = (
+        caller.db.table("activities")
+        .update({"archived_at": datetime.now(timezone.utc).isoformat()})
+        .eq("activity_id", str(activity_id))
+        .is_("archived_at", "null")
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This activity is already archived")

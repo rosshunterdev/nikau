@@ -1,0 +1,101 @@
+/* SCRUM-129 fix 08: Add / Edit activity (hi-fi 11). Uses the client form's cards,
+   segmented buttons and sticky Save bar (ClientForm.css); only the extra bits are here. */
+
+/* Radio buttons and checkboxes one per line, under their legend */
+.radio-list {
+  display: grid;
+  gap: 4px;
+}
+
+.radio-list label {
+  margin: 0;
+}
+
+/* Support workers | Staff at the activity | Staff experience */
+.form-three-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px 32px;
+  align-items: start;
+}
+
+/* Bus routes and walk from stop don't need the full width */
+.form-row-narrow {
+  max-width: 32rem;
+}
+
+/* Days and times: each session in a paper box, Day / Starts / Ends / Remove on one line */
+.session-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.session-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin: 0;
+  padding: 12px 16px 16px;
+  background: var(--paper);
+  border: 0;
+  border-radius: var(--radius-small);
+}
+
+.session-row legend {
+  float: left; /* puts the legend inside the box, on its own line */
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 0;
+  font-weight: 700;
+}
+
+.session-row label {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.session-row select,
+.session-row input {
+  width: auto;
+  margin-top: 4px;
+}
+
+/* Text-style buttons: Remove (a session) and Archive activity */
+.client-form .link-button {
+  min-height: 44px;
+  padding: 0 4px;
+  background: none;
+  border: 0;
+  color: var(--green);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* Archive sits on the left of the Save bar, apart from Cancel and Save */
+.client-form .archive-button {
+  margin-right: auto;
+}
+
+.date-checked input {
+  width: auto;
+}
+
+/* "I've confirmed these details are current" */
+.confirm-strip {
+  padding: 12px 16px;
+  background: var(--paper);
+  border-radius: var(--radius-small);
+  font-weight: 700;
+}
+
+/* Activity levels have a 4th button ("Not known") and the check method has 5:
+   keep them on one row on wide screens, wrapping on narrow ones */
+.client-form .segmented-wide {
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  max-width: 64rem;
+}

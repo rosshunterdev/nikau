@@ -6,7 +6,16 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.schemas.enums import ActivityTransport, Day, Level, SupportWorkerPolicy
+from app.schemas.enums import (
+    ActivityTransport,
+    CheckMethod,
+    Day,
+    GroupSize,
+    Joining,
+    Level,
+    StaffSupport,
+    SupportWorkerPolicy,
+)
 
 
 class ActivitySession(BaseModel):
@@ -65,6 +74,19 @@ class ActivityDetail(BaseModel):
     support_worker_policy: SupportWorkerPolicy | None = None
     checked_at: date | None = None
     checked_by: str | None = None  # set by the database (SCRUM-82)
+    # SCRUM-129 fix 08: the rest of the form (hi-fi 11)
+    street_address: str | None = None
+    joining: Joining | None = None
+    group_size: GroupSize | None = None
+    physical_notes: str | None = None
+    sensory_notes: str | None = None
+    bus_routes: str | None = None
+    walk_from_stop_minutes: int | None = None
+    staff_support: StaffSupport | None = None
+    staff_experience: bool | None = None
+    not_in_listing: str | None = None
+    check_method: CheckMethod | None = None
+    archived_at: datetime | None = None  # set = no longer in the catalogue
     # SCRUM-129 fix 07: for the read-only Activity detail page
     checked_by_name: str | None = None
     provider_name: str | None = None
@@ -93,6 +115,18 @@ class ActivityCreate(BaseModel):
     transport_options: list[ActivityTransport] = []
     support_worker_policy: SupportWorkerPolicy | None = None
     checked_at: date | None = None
+    # SCRUM-129 fix 08: the rest of the form (hi-fi 11)
+    street_address: str | None = Field(default=None, max_length=200)
+    joining: Joining | None = None
+    group_size: GroupSize | None = None
+    physical_notes: str | None = Field(default=None, max_length=1000)
+    sensory_notes: str | None = Field(default=None, max_length=1000)
+    bus_routes: str | None = Field(default=None, max_length=100)
+    walk_from_stop_minutes: int | None = Field(default=None, ge=0, le=180)
+    staff_support: StaffSupport | None = None
+    staff_experience: bool | None = None
+    not_in_listing: str | None = Field(default=None, max_length=1000)
+    check_method: CheckMethod | None = None
     tags: list[UUID] = []
     sessions: list[ActivitySession] = []
 
@@ -120,6 +154,18 @@ class ActivityUpdate(BaseModel):
     transport_options: list[ActivityTransport] | None = None
     support_worker_policy: SupportWorkerPolicy | None = None
     checked_at: date | None = None
+    # SCRUM-129 fix 08: the rest of the form (hi-fi 11)
+    street_address: str | None = Field(default=None, max_length=200)
+    joining: Joining | None = None
+    group_size: GroupSize | None = None
+    physical_notes: str | None = Field(default=None, max_length=1000)
+    sensory_notes: str | None = Field(default=None, max_length=1000)
+    bus_routes: str | None = Field(default=None, max_length=100)
+    walk_from_stop_minutes: int | None = Field(default=None, ge=0, le=180)
+    staff_support: StaffSupport | None = None
+    staff_experience: bool | None = None
+    not_in_listing: str | None = Field(default=None, max_length=1000)
+    check_method: CheckMethod | None = None
     tags: list[UUID] | None = None
     sessions: list[ActivitySession] | None = None
 
