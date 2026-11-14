@@ -21,6 +21,20 @@ function upTo(level: string | null) {
   return level ? `Up to ${labelOf(LEVELS, level).toLowerCase()}` : 'Not set'
 }
 
+// Three small bars filled up to the level (low = 1, medium = 2, high = 3), like the hi-fi.
+// Decorative only: the words next to them ("Up to medium") say the same thing.
+function LevelBars({ level }: { level: string | null }) {
+  if (!level) return null
+  const filled = LEVELS.findIndex((l) => l.value === level) + 1
+  return (
+    <span className="level-bars" aria-hidden="true">
+      {[1, 2, 3].map((n) => (
+        <span key={n} className={n <= filled ? 'on' : undefined} />
+      ))}
+    </span>
+  )
+}
+
 // "Sam Rivers" → "SR"
 function initials(name: string) {
   return name
@@ -31,13 +45,16 @@ function initials(name: string) {
     .toUpperCase()
 }
 
-// Availability as one line per day, e.g. "Monday: morning, afternoon"
+// Availability as one line per day, e.g. "Monday: morning, afternoon",
+// or "Monday: full day" when all three times are ticked
 function availabilityLines(c: ClientDetail) {
   return DAYS.map((d) => {
     const slots = SLOTS.filter((s) =>
       c.availability.some((a) => a.day === d.value && a.slot === s.value),
-    ).map((s) => s.label.toLowerCase())
-    return slots.length ? `${d.label}: ${slots.join(', ')}` : null
+    )
+    if (slots.length === 0) return null
+    if (slots.length === SLOTS.length) return `${d.label}: full day`
+    return `${d.label}: ${slots.map((s) => s.label.toLowerCase()).join(', ')}`
   }).filter((line): line is string => line !== null)
 }
 
@@ -112,9 +129,7 @@ export default function ClientProfile() {
         </span>
         <div className="profile-title">
           <h1>{client.preferred_name}</h1>
-          <p className="profile-meta">
-            {suburb ?? 'No suburb set'} · updated {formatDate(client.updated_at)}
-          </p>
+            <p className="profile-meta">{suburb ?? 'No suburb set'}</p>
         </div>
         <div className="profile-actions">
           <Link to={`/clients/${client.client_id}/edit`} className="button button-outline">
@@ -126,6 +141,20 @@ export default function ClientProfile() {
           </Link>
         </div>
       </div>
+
+      {/* Who works with this client and when it was last saved (like the hi-fi's review bar) */}
+      <dl className="profile-facts">
+        <div>
+          <dt>Assigned to</dt>
+          <dd>
+            {client.assigned_to.length > 0 ? client.assigned_to.join(', ') : 'No support worker yet'}
+          </dd>
+        </div>
+        <div className="profile-facts-muted">
+          <dt>Profile updated</dt>
+          <dd>{formatDate(client.updated_at)}</dd>
+        </div>
+      </dl>
 
       <div className="profile-grid">
         <div className="profile-column">
@@ -169,14 +198,18 @@ export default function ClientProfile() {
             <div>
               <dt>Physical demand</dt>
               <dd>
-                <strong>{upTo(client.max_physical_demand)}</strong>
+                <strong className="profile-level">
+                  <LevelBars level={client.max_physical_demand} />
+                  {upTo(client.max_physical_demand)}
+                </strong>
                 {client.physical_notes && <span className="profile-note">{client.physical_notes}</span>}
               </dd>
             </div>
             <div>
               <dt>Sensory load</dt>
               <dd>
-                <strong>
+                <strong className="profile-level">
+                  <LevelBars level={client.max_sensory_load} />
                   {upTo(client.max_sensory_load)}
                   {client.sensory_hard_limit && ' · hard limit'}
                 </strong>
@@ -226,7 +259,7 @@ export default function ClientProfile() {
         </section>
       </div>
 
-      <ClientLeads clientId={client.client_id} />
+      <ClientLeads clientId={client.client_id} clientName={client.preferred_name} />
     </>
   )
 }

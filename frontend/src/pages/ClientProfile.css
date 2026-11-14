@@ -147,3 +147,151 @@
 .profile-note {
   color: var(--muted);
 }
+
+/* Level bars beside "Up to medium" (hi-fi 03) */
+.profile-level {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.level-bars {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.level-bars span {
+  width: 18px;
+  height: 8px;
+  border: 1px solid var(--green);
+  border-radius: 2px;
+}
+
+/* A filled bar */
+.level-bars .on {
+  background: var(--green);
+}
+
+/* ---- Saved leads for Sam (hi-fi 03) ---- */
+.profile-leads-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.profile-leads-head h2 {
+  margin: 0;
+}
+
+/* All the rows in one white card, with a line between them */
+.lead-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
+}
+
+.lead-row {
+  padding: 16px 24px;
+}
+
+.lead-row + .lead-row {
+  border-top: 1px solid var(--card-edge);
+}
+
+/* Name and place on the left, "Ask about" on the right; stacked on narrow screens */
+.lead-row-main {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 8px 24px;
+}
+
+@media (max-width: 900px) {
+  .lead-row-main {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lead-row h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.lead-row-meta,
+.lead-row-ask {
+  margin: 4px 0 0;
+}
+
+.lead-row-meta {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* Details sits inside the row, so it isn't a card of its own */
+.lead-row-details {
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.lead-row-details summary {
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--green);
+  width: fit-content;
+}
+
+.lead-row-details[open] summary {
+  margin-bottom: 8px;
+}
+
+/* Long words or links in notes wrap instead of stretching the card */
+.profile-card p,
+.profile-needs dd {
+  overflow-wrap: anywhere;
+}
+
+/* Info bar under the header: "Assigned to: Will Worker   Updated: 14 Nov 2026" */
+.profile-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 0 0 24px;
+  padding: 14px 24px;
+  background: var(--paper);
+  border-radius: var(--radius);
+}
+
+.profile-facts > div {
+  display: flex;
+  gap: 6px;
+}
+
+.profile-facts dt {
+  font-weight: 400;
+}
+
+.profile-facts dt::after {
+  content: ':';
+}
+
+.profile-facts dd {
+  margin: 0;
+}
+
+/* "Updated" is quieter, like "Edited by" in the hi-fi */
+.profile-facts-muted {
+  color: var(--muted);
+}
+
+.profile-facts-muted dt {
+  font-weight: 400;
+}
