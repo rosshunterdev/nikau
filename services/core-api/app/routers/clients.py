@@ -49,8 +49,11 @@ def get_client(client_id: UUID, caller: CurrentCaller):
     """One client in full. 404 if it doesn't exist or you're not allowed to see it."""
     res = (
         caller.db.table("clients")
-        .select(
-            f"{CLIENT_FIELDS}, client_interests(tag_id), client_availability(day, slot)"
+                .select(
+            f"{CLIENT_FIELDS}, client_interests(tag_id), client_availability(day, slot), "
+            # Who's assigned (SCRUM-129). Two links go from assignments to profiles
+            # (user_id and assigned_by), so name the one we mean.
+            "client_assignments(profiles!client_assignments_user_id_fkey(first_name, last_name, role))"
         )
         .eq("client_id", str(client_id))
         .maybe_single()
@@ -60,7 +63,20 @@ def get_client(client_id: UUID, caller: CurrentCaller):
 
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Client not found")
-    return to_detail(row)
+
+    # "Will Worker" for each assigned support worker, A to Z. Coordinators are left out:
+    # they're assigned automatically when they add a client, and see every client anyway.
+    names = []
+    for a in row.pop("client_assignments") or []:
+        person = a.get("profiles") or {}
+        if person.get("role") != "support_worker":
+            continue
+        name = " ".join(n for n in (person.get("first_name"), person.get("last_name")) if n)
+        if name:
+            names.append(name)
+    detail = to_detail(row)
+    detail["assigned_to"] = sorted(names)
+    return detail
 
 
 # Postgres error codes from the save functions, turned into clear responses

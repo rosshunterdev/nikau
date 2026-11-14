@@ -111,3 +111,19 @@ def test_client_list_counts_goals(api, headers):
     listed = {c["client_id"]: c for c in api.get("/clients", headers=headers("cora")).json()}
     assert listed[ids[with_goals["preferred_name"]]]["goal_count"] == 2
     assert listed[ids[without_goals["preferred_name"]]]["goal_count"] == 0
+
+    
+def test_profile_lists_assigned_support_workers(api, headers):
+    # SCRUM-129: whoever adds a client is assigned to them. The profile names
+    # support workers only, so a client Cora (coordinator) adds lists nobody.
+    ids = {}
+    for who in ("will", "cora"):
+        r = api.post("/clients", json={**REQUIRED, "preferred_name": new_name()}, headers=headers(who))
+        assert r.status_code == 201, r.text
+        ids[who] = r.json()["client_id"]
+
+    def assigned(client_id):
+        return api.get(f"/clients/{client_id}", headers=headers("cora")).json()["assigned_to"]
+
+    assert assigned(ids["will"]) == ["Will Worker"]
+    assert assigned(ids["cora"]) == []
