@@ -5,7 +5,46 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
+}
+
+/* ---- Search clients + Add client ---- */
+.client-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.client-search {
+  flex: 1;
+  min-width: 240px;
+}
+
+.client-search label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* The magnifying glass sits inside the box, on the left */
+.client-search-box {
+  position: relative;
+}
+
+.client-search-box svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.client-search-box input {
+  width: 100%;
+  max-width: none;
+  padding-left: 42px;
 }
 
 /* ---- Client cards ---- */
@@ -14,18 +53,18 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
 }
 
 .client-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px;
-  background: #fff;
-  border: 1px solid var(--card-border);
-  border-radius: 6px;
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
 }
 
 .client-card-head {
@@ -59,6 +98,9 @@
 }
 
 .client-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
   margin: 0;
   font-size: 13px;
   color: var(--muted);
@@ -75,4 +117,32 @@
 .client-card-actions .button {
   justify-content: center;
   text-align: center;
+  white-space: nowrap; /* "Find activities" stays on one line */
+  min-height: 44px; /* still big enough to tap */
+  padding: 8px 12px;
+  font-size: 15px;
+}
+
+/* ---- "3 saved leads across 2 clients" ---- */
+.leads-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+  padding: 14px 20px;
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
+}
+
+.leads-banner p {
+  flex: 1;
+  margin: 0;
+}
+
+/* A client with saved leads stands out on the card, like the hi-fi */
+.client-leads {
+  font-weight: 700;
+  color: var(--ink);
 }

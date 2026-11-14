@@ -41,17 +41,20 @@
   top: 0;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 48px 24px 40px;
   background: #fff;
   border-right: 1px solid var(--border);
 }
 
 .sidebar-logo {
-  font-size: 44px;
-  font-weight: 700;
-  color: var(--navy);
-  text-decoration: none;
+  display: inline-block;
   margin-bottom: 28px;
+}
+
+.sidebar-logo img {
+  display: block;
+  height: 48px;
+  width: auto;
 }
 
 .sidebar-nav ul {
@@ -78,6 +81,18 @@
   background: var(--teal-tint);
 }
 
+.nav-badge {
+  margin-left: auto;
+  min-width: 28px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--amber);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .sidebar-link.active {
   background: var(--teal);
   color: #fff;
@@ -89,6 +104,12 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.sidebar-greeting {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .sidebar-user {
@@ -145,7 +166,7 @@
 .app-main {
   flex: 1;
   min-width: 0;
-  padding: 40px;
+  padding: 48px 80px;
 }
 
 /* NEW: main gets focus from the skip link; no outline needed on the whole page */
@@ -161,7 +182,7 @@
   color: var(--navy);
 }
 
-.page-title-en {
+.page-title-sub {
   display: block;
   margin-top: 4px;
   font-size: 18px;
@@ -241,8 +262,15 @@
   }
 
   .sidebar-logo {
-    font-size: 28px;
     margin: 0;
+  }
+
+  .sidebar-logo img {
+    height: 32px;
+  }
+
+  .sidebar-greeting {
+    display: none;
   }
 
   /* NEW: name and role sit beside Sign out on one row */

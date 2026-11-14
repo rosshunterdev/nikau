@@ -5,6 +5,7 @@ export type ClientSummary = {
   preferred_name: string
   suburb_name: string | null
   updated_at: string
+  goal_count: number
 }
 
 export type Level = 'low' | 'medium' | 'high'

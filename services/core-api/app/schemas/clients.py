@@ -36,6 +36,7 @@ class ClientSummary(BaseModel):
     preferred_name: str
     suburb_name: str | None = None
     updated_at: datetime
+    goal_count: int = 0  # SCRUM-129: shown on the client card
 
 
 class ClientDetail(BaseModel):

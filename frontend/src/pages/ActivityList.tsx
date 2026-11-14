@@ -174,6 +174,7 @@ export default function ActivityList() {
         ))}
 
       {activities && activities.length > 0 && (
+        <div className="table-scroll" tabIndex={0} role="region" aria-label="Activities">
         <table>
           <thead>
             <tr>
@@ -221,6 +222,7 @@ export default function ActivityList() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </section>
   )

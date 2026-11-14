@@ -40,34 +40,36 @@ export default function ProviderList() {
       {providers?.length === 0 && <p>No providers yet. Add your first one.</p>}
 
       {providers && providers.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Consent</th>
-              <th scope="col">Contact</th>
-              <th scope="col"><span className="visually-hidden">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {providers.map((p) => (
-              <tr key={p.provider_id}>
-                <td>{p.name}</td>
-                <td>
-                  {p.consent_given && p.consent_date
-                    ? `Given ${formatDate(p.consent_date)}`
-                    : 'Not yet'}
-                </td>
-                <td>{p.contact_email ?? p.contact_phone ?? '—'}</td>
-                <td>
-                  <Link to={`/providers/${p.provider_id}`} aria-label={`Edit ${p.name}`}>
-                    Edit
-                  </Link>
-                </td>
+        <div className="table-scroll" tabIndex={0} role="region" aria-label="Providers">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Consent</th>
+                <th scope="col">Contact</th>
+                <th scope="col"><span className="visually-hidden">Actions</span></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {providers.map((p) => (
+                <tr key={p.provider_id}>
+                  <td>{p.name}</td>
+                  <td>
+                    {p.consent_given && p.consent_date
+                      ? `Given ${formatDate(p.consent_date)}`
+                      : 'Not yet'}
+                  </td>
+                  <td>{p.contact_email ?? p.contact_phone ?? '—'}</td>
+                  <td>
+                    <Link to={`/providers/${p.provider_id}`} aria-label={`Edit ${p.name}`}>
+                      Edit
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   )
