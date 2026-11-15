@@ -52,6 +52,11 @@ export type Provider = {
   created_at: string
 }
 
+// A provider in the Providers list (SCRUM-129 fix 09)
+export type ProviderListItem = Provider & {
+  activity_count: number // not counting archived activities
+}
+
 export type ActivitySummary = {
   activity_id: string
   name: string

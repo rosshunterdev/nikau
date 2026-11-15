@@ -4,7 +4,12 @@ from fastapi import APIRouter, HTTPException, status
 from postgrest.exceptions import APIError
 
 from app.deps import CurrentCaller
-from app.schemas.providers import Provider, ProviderCreate, ProviderUpdate
+from app.schemas.providers import (
+    Provider,
+    ProviderCreate,
+    ProviderListItem,
+    ProviderUpdate,
+)
 
 router = APIRouter(tags=["providers"])
 
@@ -13,17 +18,27 @@ PROVIDER_FIELDS = (
     "consent_given, consent_date, created_at"
 )
 
+# SCRUM-129 fix 09: the list also shows how many activities each provider runs
+LIST_FIELDS = f"{PROVIDER_FIELDS}, activities(archived_at)"
+
 # Postgres error codes we turn into clear messages
 NOT_ALLOWED = "42501"  # RLS blocked it
 CHECK_FAILED = "23514"  # a table rule (check constraint) failed
 
 
-@router.get("/providers", response_model=list[Provider])
+def to_list_item(row: dict) -> dict:
+    """A provider row plus its activity count. Archived activities aren't counted."""
+    activities = row.pop("activities", None) or []
+    row["activity_count"] = sum(1 for a in activities if not a.get("archived_at"))
+    return row
+
+
+@router.get("/providers", response_model=list[ProviderListItem])
 def list_providers(caller: CurrentCaller):
-    """Providers you're allowed to see, A to Z.
+    """Providers you're allowed to see, A to Z, with how many activities each runs.
     Coordinators see all; other staff only providers who gave consent (RLS)."""
-    res = caller.db.table("providers").select(PROVIDER_FIELDS).order("name").execute()
-    return res.data
+    res = caller.db.table("providers").select(LIST_FIELDS).order("name").execute()
+    return [to_list_item(row) for row in res.data]
 
 
 @router.get("/providers/{provider_id}", response_model=Provider)

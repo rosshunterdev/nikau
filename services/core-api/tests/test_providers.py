@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.main import app
+from app.routers.providers import to_list_item
 from app.schemas.providers import ProviderCreate, ProviderUpdate
 
 client = TestClient(app)
@@ -54,3 +55,23 @@ def test_update_with_only_some_fields_passes():
 def test_update_cannot_clear_the_name():
     with pytest.raises(ValidationError):
         ProviderUpdate(name=None)
+
+
+# --- Activity count in the list (SCRUM-129 fix 09) ---
+
+def test_list_count_leaves_out_archived_activities():
+    row = {
+        "name": "Swim club",
+        "activities": [
+            {"archived_at": None},
+            {"archived_at": None},
+            {"archived_at": "2026-11-15T01:00:00+00:00"},
+        ],
+    }
+    item = to_list_item(row)
+    assert item["activity_count"] == 2
+    assert "activities" not in item
+
+
+def test_list_count_is_zero_with_no_activities():
+    assert to_list_item({"name": "Swim club", "activities": []})["activity_count"] == 0

@@ -19,6 +19,12 @@ class Provider(BaseModel):
     created_at: datetime
 
 
+class ProviderListItem(Provider):
+    """A provider in the Providers list (SCRUM-129 fix 09)."""
+
+    activity_count: int = 0  # activities in the catalogue, not counting archived ones
+
+
 class ProviderCreate(BaseModel):
     """What the 'Add a provider' form sends. Only the name is required."""
 

@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { api, ApiError } from '../lib/api'
 import type { Provider } from '../lib/types'
 import { todayLocal } from '../lib/dates'
+import './ClientForm.css' // shared form look: cards, breadcrumb, Cancel and Save bar
+import './Providers.css'
 
 // What the form holds while you type. Empty boxes are '' until saving.
 type FormState = {
@@ -55,6 +57,7 @@ export default function ProviderFormPage() {
 function ProviderForm({ id }: { id?: string }) {
   const navigate = useNavigate()
   const [form, setForm] = useState<FormState | null>(id ? null : EMPTY)
+  const [savedName, setSavedName] = useState<string>() // for the title while you edit the name
   const [error, setError] = useState<string>()
   const [saving, setSaving] = useState(false)
 
@@ -62,7 +65,10 @@ function ProviderForm({ id }: { id?: string }) {
   useEffect(() => {
     if (!id) return
     api<Provider>(`/providers/${id}`)
-      .then((p) => setForm(fromProvider(p)))
+      .then((p) => {
+        setForm(fromProvider(p))
+        setSavedName(p.name)
+      })
       .catch((err) =>
         setError(
           err instanceof ApiError && err.status === 404
@@ -104,82 +110,111 @@ function ProviderForm({ id }: { id?: string }) {
     )
   }
 
+  // SCRUM-129 fix 09: same look as the client form (cards, Cancel and Save at the bottom)
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>{id ? 'Edit provider' : 'Add provider'}</h1>
-      <Link to="/providers">Back to providers</Link>
+    <>
+      <nav aria-label="Breadcrumb" className="breadcrumb">
+        <ol>
+          <li>
+            <Link to="/providers">Providers</Link>
+          </li>
+          <li aria-current="page">{id ? `Edit ${savedName ?? 'provider'}` : 'Add provider'}</li>
+        </ol>
+      </nav>
 
-      <label>
-        Name (required)
-        <input
-          value={form.name}
-          onChange={(e) => set('name', e.target.value)}
-          required
-          maxLength={200}
-        />
-      </label>
+      <h1 className="form-title">
+        {id && savedName ? `Edit provider: ${savedName}` : 'Add provider'}
+        {id && <span lang="mi">Whakatika</span>}
+      </h1>
+      <p className="form-intro">Contact details are stored here once, not on each activity.</p>
 
-      <label>
-        Email
-        <input
-          type="email"
-          value={form.contact_email}
-          onChange={(e) => set('contact_email', e.target.value)}
-          maxLength={254}
-        />
-      </label>
-
-      <label>
-        Phone
-        <input
-          type="tel"
-          value={form.contact_phone}
-          onChange={(e) => set('contact_phone', e.target.value)}
-          maxLength={30}
-        />
-      </label>
-
-      <label>
-        Website
-        <input
-          type="url"
-          placeholder="https://"
-          value={form.website}
-          onChange={(e) => set('website', e.target.value)}
-          maxLength={500}
-        />
-      </label>
-
-      <fieldset>
-        <legend>Consent to be listed</legend>
-        <label>
-          <input
-            type="checkbox"
-            checked={form.consent_given}
-            onChange={(e) => set('consent_given', e.target.checked)}
-          />
-          The provider agreed to be listed in the catalogue
-        </label>
-
-        {form.consent_given && (
+      <form onSubmit={handleSubmit} className="client-form">
+        <section className="form-card" aria-labelledby="provider-details-heading">
+          <h2 id="provider-details-heading" className="form-card-heading">
+            Provider details
+          </h2>
           <label>
-            Date consent was given (required)
+            Name (required)
             <input
-              type="date"
-              value={form.consent_date}
-              onChange={(e) => set('consent_date', e.target.value)}
-              max={todayLocal()}
+              value={form.name}
+              onChange={(e) => set('name', e.target.value)}
               required
+              maxLength={200}
             />
           </label>
-        )}
-      </fieldset>
 
-      {error && <p role="alert">{error}</p>}
+          <div className="form-row">
+            <label>
+              Phone
+              <input
+                type="tel"
+                value={form.contact_phone}
+                onChange={(e) => set('contact_phone', e.target.value)}
+                maxLength={30}
+              />
+            </label>
 
-      <button type="submit" disabled={saving}>
-        {saving ? 'Saving…' : id ? 'Save changes' : 'Add provider'}
-      </button>
-    </form>
+            <label>
+              Email
+              <input
+                type="email"
+                value={form.contact_email}
+                onChange={(e) => set('contact_email', e.target.value)}
+                maxLength={254}
+              />
+            </label>
+
+            <label>
+              Website
+              <input
+                type="url"
+                placeholder="https://"
+                value={form.website}
+                onChange={(e) => set('website', e.target.value)}
+                maxLength={500}
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="form-card" aria-labelledby="provider-consent-heading">
+          <h2 id="provider-consent-heading" className="form-card-heading">
+            Listing consent
+          </h2>
+          <label className="provider-consent-check">
+            <input
+              type="checkbox"
+              checked={form.consent_given}
+              onChange={(e) => set('consent_given', e.target.checked)}
+            />
+            The provider agreed to be listed in the catalogue
+          </label>
+
+          {form.consent_given && (
+            <label className="provider-consent-date">
+              Date consent was given (required)
+              <input
+                type="date"
+                value={form.consent_date}
+                onChange={(e) => set('consent_date', e.target.value)}
+                max={todayLocal()}
+                required
+              />
+            </label>
+          )}
+        </section>
+
+        {error && <p role="alert">{error}</p>}
+
+        <div className="form-actions">
+          <Link to="/providers" className="button button-outline">
+            Cancel
+          </Link>
+          <button type="submit" disabled={saving}>
+            {saving ? 'Saving…' : id ? 'Save changes' : 'Add provider'}
+          </button>
+        </div>
+      </form>
+    </>
   )
 }

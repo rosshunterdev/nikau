@@ -185,7 +185,7 @@ export default function ActivityList() {
           </p>
         </div>
         {isCoordinator && (
-          <Link to="/activities/new" className="button button-outline">
+          <Link to="/activities/new" className="button button-primary">
             <Plus size={18} aria-hidden="true" />
             Add activity
           </Link>

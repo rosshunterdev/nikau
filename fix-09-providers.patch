@@ -1,0 +1,725 @@
+diff --git a/frontend/src/lib/types.ts b/frontend/src/lib/types.ts
+index e809342..a516a78 100644
+--- a/frontend/src/lib/types.ts
++++ b/frontend/src/lib/types.ts
+@@ -52,6 +52,11 @@ export type Provider = {
+   created_at: string
+ }
+ 
++// A provider in the Providers list (SCRUM-129 fix 09)
++export type ProviderListItem = Provider & {
++  activity_count: number // not counting archived activities
++}
++
+ export type ActivitySummary = {
+   activity_id: string
+   name: string
+diff --git a/frontend/src/pages/ProviderForm.tsx b/frontend/src/pages/ProviderForm.tsx
+index 3ac597e..53b844b 100644
+--- a/frontend/src/pages/ProviderForm.tsx
++++ b/frontend/src/pages/ProviderForm.tsx
+@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router'
+ import { api, ApiError } from '../lib/api'
+ import type { Provider } from '../lib/types'
+ import { todayLocal } from '../lib/dates'
++import './ClientForm.css' // shared form look: cards, breadcrumb, Cancel and Save bar
++import './Providers.css'
+ 
+ // What the form holds while you type. Empty boxes are '' until saving.
+ type FormState = {
+@@ -55,6 +57,7 @@ export default function ProviderFormPage() {
+ function ProviderForm({ id }: { id?: string }) {
+   const navigate = useNavigate()
+   const [form, setForm] = useState<FormState | null>(id ? null : EMPTY)
++  const [savedName, setSavedName] = useState<string>() // for the title while you edit the name
+   const [error, setError] = useState<string>()
+   const [saving, setSaving] = useState(false)
+ 
+@@ -62,7 +65,10 @@ function ProviderForm({ id }: { id?: string }) {
+   useEffect(() => {
+     if (!id) return
+     api<Provider>(`/providers/${id}`)
+-      .then((p) => setForm(fromProvider(p)))
++      .then((p) => {
++        setForm(fromProvider(p))
++        setSavedName(p.name)
++      })
+       .catch((err) =>
+         setError(
+           err instanceof ApiError && err.status === 404
+@@ -104,82 +110,111 @@ function ProviderForm({ id }: { id?: string }) {
+     )
+   }
+ 
++  // SCRUM-129 fix 09: same look as the client form (cards, Cancel and Save at the bottom)
+   return (
+-    <form onSubmit={handleSubmit}>
+-      <h1>{id ? 'Edit provider' : 'Add provider'}</h1>
+-      <Link to="/providers">Back to providers</Link>
+-
+-      <label>
+-        Name (required)
+-        <input
+-          value={form.name}
+-          onChange={(e) => set('name', e.target.value)}
+-          required
+-          maxLength={200}
+-        />
+-      </label>
+-
+-      <label>
+-        Email
+-        <input
+-          type="email"
+-          value={form.contact_email}
+-          onChange={(e) => set('contact_email', e.target.value)}
+-          maxLength={254}
+-        />
+-      </label>
+-
+-      <label>
+-        Phone
+-        <input
+-          type="tel"
+-          value={form.contact_phone}
+-          onChange={(e) => set('contact_phone', e.target.value)}
+-          maxLength={30}
+-        />
+-      </label>
+-
+-      <label>
+-        Website
+-        <input
+-          type="url"
+-          placeholder="https://"
+-          value={form.website}
+-          onChange={(e) => set('website', e.target.value)}
+-          maxLength={500}
+-        />
+-      </label>
+-
+-      <fieldset>
+-        <legend>Consent to be listed</legend>
+-        <label>
+-          <input
+-            type="checkbox"
+-            checked={form.consent_given}
+-            onChange={(e) => set('consent_given', e.target.checked)}
+-          />
+-          The provider agreed to be listed in the catalogue
+-        </label>
+-
+-        {form.consent_given && (
++    <>
++      <nav aria-label="Breadcrumb" className="breadcrumb">
++        <ol>
++          <li>
++            <Link to="/providers">Providers</Link>
++          </li>
++          <li aria-current="page">{id ? `Edit ${savedName ?? 'provider'}` : 'Add provider'}</li>
++        </ol>
++      </nav>
++
++      <h1 className="form-title">
++        {id && savedName ? `Edit provider: ${savedName}` : 'Add provider'}
++        {id && <span lang="mi">Whakatika</span>}
++      </h1>
++      <p className="form-intro">Contact details are stored here once, not on each activity.</p>
++
++      <form onSubmit={handleSubmit} className="client-form">
++        <section className="form-card" aria-labelledby="provider-details-heading">
++          <h2 id="provider-details-heading" className="form-card-heading">
++            Provider details
++          </h2>
+           <label>
+-            Date consent was given (required)
++            Name (required)
+             <input
+-              type="date"
+-              value={form.consent_date}
+-              onChange={(e) => set('consent_date', e.target.value)}
+-              max={todayLocal()}
++              value={form.name}
++              onChange={(e) => set('name', e.target.value)}
+               required
++              maxLength={200}
+             />
+           </label>
+-        )}
+-      </fieldset>
+ 
+-      {error && <p role="alert">{error}</p>}
++          <div className="form-row">
++            <label>
++              Phone
++              <input
++                type="tel"
++                value={form.contact_phone}
++                onChange={(e) => set('contact_phone', e.target.value)}
++                maxLength={30}
++              />
++            </label>
++
++            <label>
++              Email
++              <input
++                type="email"
++                value={form.contact_email}
++                onChange={(e) => set('contact_email', e.target.value)}
++                maxLength={254}
++              />
++            </label>
++
++            <label>
++              Website
++              <input
++                type="url"
++                placeholder="https://"
++                value={form.website}
++                onChange={(e) => set('website', e.target.value)}
++                maxLength={500}
++              />
++            </label>
++          </div>
++        </section>
++
++        <section className="form-card" aria-labelledby="provider-consent-heading">
++          <h2 id="provider-consent-heading" className="form-card-heading">
++            Listing consent
++          </h2>
++          <label className="provider-consent-check">
++            <input
++              type="checkbox"
++              checked={form.consent_given}
++              onChange={(e) => set('consent_given', e.target.checked)}
++            />
++            The provider agreed to be listed in the catalogue
++          </label>
+ 
+-      <button type="submit" disabled={saving}>
+-        {saving ? 'Saving…' : id ? 'Save changes' : 'Add provider'}
+-      </button>
+-    </form>
++          {form.consent_given && (
++            <label className="provider-consent-date">
++              Date consent was given (required)
++              <input
++                type="date"
++                value={form.consent_date}
++                onChange={(e) => set('consent_date', e.target.value)}
++                max={todayLocal()}
++                required
++              />
++            </label>
++          )}
++        </section>
++
++        {error && <p role="alert">{error}</p>}
++
++        <div className="form-actions">
++          <Link to="/providers" className="button button-outline">
++            Cancel
++          </Link>
++          <button type="submit" disabled={saving}>
++            {saving ? 'Saving…' : id ? 'Save changes' : 'Add provider'}
++          </button>
++        </div>
++      </form>
++    </>
+   )
+ }
+diff --git a/frontend/src/pages/ProviderList.tsx b/frontend/src/pages/ProviderList.tsx
+index ca090d0..fd1985e 100644
+--- a/frontend/src/pages/ProviderList.tsx
++++ b/frontend/src/pages/ProviderList.tsx
+@@ -1,66 +1,155 @@
+ import { useEffect, useState } from 'react'
+ import { Link } from 'react-router'
+-import { Plus } from 'lucide-react'
++import { Check, Plus, Search } from 'lucide-react'
+ import { api, ApiError } from '../lib/api'
+-import type { Provider } from '../lib/types'
++import type { ProviderListItem } from '../lib/types'
++import './Providers.css'
+ 
+-// Show a date like "18 Oct 2026"
+-function formatDate(iso: string) {
+-  return new Date(iso).toLocaleDateString('en-NZ', {
++type ConsentFilter = 'all' | 'given' | 'not-given'
++
++// "2026-09-18" -> "18 Sep 2026". A date with no time, so read it as a local day.
++function formatDay(day: string) {
++  return new Date(`${day}T00:00`).toLocaleDateString('en-NZ', {
+     day: 'numeric',
+     month: 'short',
+     year: 'numeric',
+   })
+ }
+ 
++// Which contact details we hold, e.g. "Phone, email, website"
++function contactOnFile(p: ProviderListItem) {
++  const held = [
++    p.contact_phone && 'phone',
++    p.contact_email && 'email',
++    p.website && 'website',
++  ].filter(Boolean) as string[]
++  if (held.length === 0) return 'None'
++  const text = held.join(', ')
++  return text[0].toUpperCase() + text.slice(1)
++}
++
++// SCRUM-129 fix 09 (hi-fi 12): the coordinator's list of providers
+ export default function ProviderList() {
+-  const [providers, setProviders] = useState<Provider[] | null>(null)
++  const [providers, setProviders] = useState<ProviderListItem[] | null>(null)
+   const [error, setError] = useState<string>()
++  const [query, setQuery] = useState('')
++  const [consent, setConsent] = useState<ConsentFilter>('all')
+ 
+   useEffect(() => {
+-    api<Provider[]>('/providers')
++    api<ProviderListItem[]>('/providers')
+       .then(setProviders)
+       .catch((e) =>
+         setError(e instanceof ApiError ? e.message : "Can't reach the server. Try again."),
+       )
+   }, [])
+ 
++  const all = providers ?? []
++  const givenCount = all.filter((p) => p.consent_given).length
++
++  // The list is short, so it filters as you type, with no Search button
++  const q = query.trim().toLowerCase()
++  const shown = all.filter(
++    (p) =>
++      (!q || p.name.toLowerCase().includes(q)) &&
++      (consent === 'all' || p.consent_given === (consent === 'given')),
++  )
++  const filtering = q !== '' || consent !== 'all'
++
+   return (
+     <section>
+-      <div className="page-header">
+-        <h1 className="page-title">Providers</h1>
+-        <Link to="/providers/new" className="button button-outline">
++      <div className="page-header providers-header">
++        <div>
++          <h1 className="page-title">Providers</h1>
++          <p className="providers-mi" lang="mi">
++            Ngā kaiwhakarato
++          </p>
++          <p className="providers-intro">
++            The groups that run activities in the catalogue, and whether they've agreed to be
++            listed.
++          </p>
++        </div>
++        <Link to="/providers/new" className="button button-primary">
+           <Plus size={18} aria-hidden="true" />
+           Add provider
+         </Link>
+       </div>
+ 
++      <div className="providers-toolbar">
++        <div className="providers-search">
++          <label htmlFor="provider-search">Search providers</label>
++          <div className="providers-search-box">
++            <Search size={18} aria-hidden="true" />
++            <input
++              id="provider-search"
++              type="search"
++              placeholder="Provider name"
++              value={query}
++              onChange={(e) => setQuery(e.target.value)}
++            />
++          </div>
++        </div>
++        <div className="providers-consent">
++          <label htmlFor="provider-consent">Listing consent</label>
++          <select
++            id="provider-consent"
++            value={consent}
++            onChange={(e) => setConsent(e.target.value as ConsentFilter)}
++          >
++            <option value="all">All ({all.length})</option>
++            <option value="given">Given ({givenCount})</option>
++            <option value="not-given">Not given ({all.length - givenCount})</option>
++          </select>
++        </div>
++      </div>
++
++      {/* Screen readers hear how many match while filtering */}
++      <p role="status" className="visually-hidden">
++        {filtering ? `${shown.length} ${shown.length === 1 ? 'provider' : 'providers'} shown` : ''}
++      </p>
++
+       {error && <p role="alert">{error}</p>}
+       {!error && providers === null && <p role="status">Loading providers…</p>}
+       {providers?.length === 0 && <p>No providers yet. Add your first one.</p>}
++      {all.length > 0 && shown.length === 0 && (
++        <p className="providers-empty">No providers match these filters.</p>
++      )}
+ 
+-      {providers && providers.length > 0 && (
+-        <div className="table-scroll" tabIndex={0} role="region" aria-label="Providers">
+-          <table>
++      {shown.length > 0 && (
++        <div
++          className="table-scroll providers-card"
++          tabIndex={0}
++          role="region"
++          aria-label="Providers"
++        >
++          <table className="providers-table">
+             <thead>
+               <tr>
+                 <th scope="col">Name</th>
+-                <th scope="col">Consent</th>
+-                <th scope="col">Contact</th>
+-                <th scope="col"><span className="visually-hidden">Actions</span></th>
++                <th scope="col">Contact on file</th>
++                <th scope="col">Activities</th>
++                <th scope="col">Listing consent</th>
++                <th scope="col">
++                  <span className="visually-hidden">Actions</span>
++                </th>
+               </tr>
+             </thead>
+             <tbody>
+-              {providers.map((p) => (
++              {shown.map((p) => (
+                 <tr key={p.provider_id}>
+-                  <td>{p.name}</td>
++                  <th scope="row">{p.name}</th>
++                  <td>{contactOnFile(p)}</td>
++                  <td>{p.activity_count}</td>
+                   <td>
+-                    {p.consent_given && p.consent_date
+-                      ? `Given ${formatDate(p.consent_date)}`
+-                      : 'Not yet'}
++                    {p.consent_given && p.consent_date ? (
++                      <span className="consent-pill consent-given">
++                        <Check size={14} aria-hidden="true" />
++                        Given {formatDay(p.consent_date)}
++                      </span>
++                    ) : (
++                      <span className="consent-pill consent-missing">Not given</span>
++                    )}
+                   </td>
+-                  <td>{p.contact_email ?? p.contact_phone ?? '—'}</td>
+-                  <td>
++                  <td className="providers-edit">
+                     <Link to={`/providers/${p.provider_id}`} aria-label={`Edit ${p.name}`}>
+                       Edit
+                     </Link>
+@@ -71,6 +160,10 @@ export default function ProviderList() {
+           </table>
+         </div>
+       )}
++
++      <p className="providers-note">
++        Contact details are stored on the provider, not on each activity.
++      </p>
+     </section>
+   )
+ }
+diff --git a/frontend/src/pages/Providers.css b/frontend/src/pages/Providers.css
+new file mode 100644
+index 0000000..bae2238
+--- /dev/null
++++ b/frontend/src/pages/Providers.css
+@@ -0,0 +1,172 @@
++/* SCRUM-129 fix 09: Providers list (hi-fi 12) and the provider form */
++
++/* ---- Header: title, te reo name, one line of intro, Add provider on the right ---- */
++.providers-header {
++  display: flex;
++  flex-wrap: wrap;
++  justify-content: space-between;
++  gap: 16px;
++  align-items: flex-start;
++  margin-bottom: 24px;
++}
++
++/* The text takes the room, so Add provider stays on the right */
++.providers-header > div {
++  flex: 1 1 320px;
++}
++
++.providers-mi {
++  margin: 6px 0 0;
++  font-size: 1.1rem;
++  font-weight: 700;
++  color: var(--muted);
++}
++
++.providers-intro {
++  margin: 6px 0 0;
++  color: var(--muted);
++}
++
++/* ---- Search providers + Listing consent ---- */
++.providers-toolbar {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: flex-start;
++  gap: 12px;
++  margin-bottom: 20px;
++}
++
++.providers-toolbar label {
++  display: block;
++  margin: 0 0 6px;
++}
++
++.providers-search {
++  flex: 0 1 360px;
++  min-width: 240px;
++}
++
++/* The magnifying glass sits inside the box, on the left */
++.providers-search-box {
++  position: relative;
++}
++
++.providers-search-box svg {
++  position: absolute;
++  left: 14px;
++  top: 50%;
++  transform: translateY(-50%);
++  color: var(--muted);
++  pointer-events: none;
++}
++
++.providers-search-box input {
++  width: 100%;
++  max-width: none;
++  margin: 0;
++  padding-left: 42px;
++}
++
++.providers-consent select {
++  margin: 0;
++}
++
++/* ---- The table, in one white card ---- */
++.providers-card {
++  background: var(--card);
++  border: 1px solid var(--card-edge);
++  border-radius: var(--radius);
++}
++
++.providers-table {
++  width: 100%;
++}
++
++.providers-table th,
++.providers-table td {
++  padding: 14px 20px;
++  vertical-align: middle;
++}
++
++.providers-table thead th {
++  background: var(--paper);
++  font-weight: 700;
++}
++
++/* Round the header's corners to match the card */
++.providers-table thead th:first-child {
++  border-top-left-radius: var(--radius);
++}
++
++.providers-table thead th:last-child {
++  border-top-right-radius: var(--radius);
++}
++
++.providers-table tbody th {
++  font-weight: 700;
++}
++
++.providers-table tbody tr:last-child th,
++.providers-table tbody tr:last-child td {
++  border-bottom: 0;
++}
++
++.providers-edit {
++  text-align: right;
++}
++
++.providers-edit a {
++  font-weight: 700;
++}
++
++/* Consent: green pill with a tick, or a dashed outline when not given */
++.consent-pill {
++  display: inline-flex;
++  align-items: center;
++  gap: 4px;
++  padding: 3px 10px;
++  border-radius: 999px;
++  font-size: 0.85rem;
++  font-weight: 700;
++  white-space: nowrap;
++}
++
++.consent-given {
++  background: var(--mint);
++}
++
++.consent-missing {
++  border: 1px dashed var(--ink);
++}
++
++.providers-empty {
++  margin: 0;
++  padding: 24px;
++  background: var(--card);
++  border: 1px solid var(--card-edge);
++  border-radius: var(--radius);
++}
++
++.providers-note {
++  margin: 16px 0 0;
++  color: var(--muted);
++  font-size: 0.9rem;
++}
++
++/* ---- Provider form ---- */
++
++/* "The provider agreed to be listed": tick box and text on one line */
++.provider-consent-check {
++  display: flex;
++  align-items: flex-start;
++  gap: 10px;
++  font-weight: 400;
++}
++
++.provider-consent-check input {
++  margin-top: 4px;
++}
++
++.provider-consent-date {
++  max-width: 18rem;
++}
+diff --git a/services/core-api/app/routers/providers.py b/services/core-api/app/routers/providers.py
+index 1cff495..9aa5b7e 100644
+--- a/services/core-api/app/routers/providers.py
++++ b/services/core-api/app/routers/providers.py
+@@ -4,7 +4,12 @@ from fastapi import APIRouter, HTTPException, status
+ from postgrest.exceptions import APIError
+ 
+ from app.deps import CurrentCaller
+-from app.schemas.providers import Provider, ProviderCreate, ProviderUpdate
++from app.schemas.providers import (
++    Provider,
++    ProviderCreate,
++    ProviderListItem,
++    ProviderUpdate,
++)
+ 
+ router = APIRouter(tags=["providers"])
+ 
+@@ -13,17 +18,27 @@ PROVIDER_FIELDS = (
+     "consent_given, consent_date, created_at"
+ )
+ 
++# SCRUM-129 fix 09: the list also shows how many activities each provider runs
++LIST_FIELDS = f"{PROVIDER_FIELDS}, activities(archived_at)"
++
+ # Postgres error codes we turn into clear messages
+ NOT_ALLOWED = "42501"  # RLS blocked it
+ CHECK_FAILED = "23514"  # a table rule (check constraint) failed
+ 
+ 
+-@router.get("/providers", response_model=list[Provider])
++def to_list_item(row: dict) -> dict:
++    """A provider row plus its activity count. Archived activities aren't counted."""
++    activities = row.pop("activities", None) or []
++    row["activity_count"] = sum(1 for a in activities if not a.get("archived_at"))
++    return row
++
++
++@router.get("/providers", response_model=list[ProviderListItem])
+ def list_providers(caller: CurrentCaller):
+-    """Providers you're allowed to see, A to Z.
++    """Providers you're allowed to see, A to Z, with how many activities each runs.
+     Coordinators see all; other staff only providers who gave consent (RLS)."""
+-    res = caller.db.table("providers").select(PROVIDER_FIELDS).order("name").execute()
+-    return res.data
++    res = caller.db.table("providers").select(LIST_FIELDS).order("name").execute()
++    return [to_list_item(row) for row in res.data]
+ 
+ 
+ @router.get("/providers/{provider_id}", response_model=Provider)
+diff --git a/services/core-api/app/schemas/providers.py b/services/core-api/app/schemas/providers.py
+index 1f282f5..cbc457d 100644
+--- a/services/core-api/app/schemas/providers.py
++++ b/services/core-api/app/schemas/providers.py
+@@ -19,6 +19,12 @@ class Provider(BaseModel):
+     created_at: datetime
+ 
+ 
++class ProviderListItem(Provider):
++    """A provider in the Providers list (SCRUM-129 fix 09)."""
++
++    activity_count: int = 0  # activities in the catalogue, not counting archived ones
++
++
+ class ProviderCreate(BaseModel):
+     """What the 'Add a provider' form sends. Only the name is required."""
+ 
+diff --git a/services/core-api/tests/db/test_db_providers.py b/services/core-api/tests/db/test_db_providers.py
+new file mode 100644
+index 0000000..f17a282
+--- /dev/null
++++ b/services/core-api/tests/db/test_db_providers.py
+@@ -0,0 +1,14 @@
++"""Providers list against the local database (SCRUM-129 fix 09)."""
++
++
++def test_providers_list_has_activity_counts(api, headers):
++    providers = api.get("/providers", headers=headers("cora")).json()
++    assert providers, "the seed data has providers"
++    assert all(isinstance(p["activity_count"], int) for p in providers)
++
++
++def test_activity_counts_match_the_catalogue(api, headers):
++    """Coordinators see every activity, so the counts add up to the catalogue."""
++    providers = api.get("/providers", headers=headers("cora")).json()
++    activities = api.get("/activities", headers=headers("cora")).json()
++    assert sum(p["activity_count"] for p in providers) == len(activities)
+diff --git a/services/core-api/tests/test_providers.py b/services/core-api/tests/test_providers.py
+index 4735edb..f5ad1ba 100644
+--- a/services/core-api/tests/test_providers.py
++++ b/services/core-api/tests/test_providers.py
+@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
+ from pydantic import ValidationError
+ 
+ from app.main import app
++from app.routers.providers import to_list_item
+ from app.schemas.providers import ProviderCreate, ProviderUpdate
+ 
+ client = TestClient(app)
+@@ -54,3 +55,23 @@ def test_update_with_only_some_fields_passes():
+ def test_update_cannot_clear_the_name():
+     with pytest.raises(ValidationError):
+         ProviderUpdate(name=None)
++
++
++# --- Activity count in the list (SCRUM-129 fix 09) ---
++
++def test_list_count_leaves_out_archived_activities():
++    row = {
++        "name": "Swim club",
++        "activities": [
++            {"archived_at": None},
++            {"archived_at": None},
++            {"archived_at": "2026-11-15T01:00:00+00:00"},
++        ],
++    }
++    item = to_list_item(row)
++    assert item["activity_count"] == 2
++    assert "activities" not in item
++
++
++def test_list_count_is_zero_with_no_activities():
++    assert to_list_item({"name": "Swim club", "activities": []})["activity_count"] == 0
