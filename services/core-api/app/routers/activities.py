@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -283,7 +283,7 @@ def archive_activity(activity_id: UUID, caller: CurrentCaller):
     require_coordinator(caller)
     res = (
         caller.db.table("activities")
-        .update({"archived_at": datetime.now(timezone.utc).isoformat()})
+        .update({"archived_at": datetime.now(UTC).isoformat()})
         .eq("activity_id", str(activity_id))
         .is_("archived_at", "null")
         .execute()
