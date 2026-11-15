@@ -1,14 +1,29 @@
-from fastapi import APIRouter, HTTPException, status
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.deps import CurrentCaller
 from app.schemas.matching_log import MatchingLogEntry
 
 router = APIRouter(tags=["matching-log"])
 
+LOG_FIELDS = (
+    "request_id, requested_at, called_as, response_ms, result, fallback_shown, "
+    "candidate_count, leads_shown, model_ms, dropped_count"
+)
+
+# Safety cap on rows in one period (SCRUM-129 fix 10)
+MAX_ROWS = 5000
+
 
 @router.get("/matching-log", response_model=list[MatchingLogEntry])
-def list_matching_log(caller: CurrentCaller):
-    """Past AI match requests for your organisation, newest first. Coordinators only."""
+def list_matching_log(
+    caller: CurrentCaller,
+    days: Annotated[int, Query(ge=1, le=365)] = 7,
+):
+    """Match requests for your organisation in the last `days` days, newest first.
+    Coordinators only. No client or staff details: the page is about speed and outcome."""
     res = (
         caller.db.table("profiles")
         .select("role")
@@ -22,20 +37,13 @@ def list_matching_log(caller: CurrentCaller):
             status.HTTP_403_FORBIDDEN, "Only coordinators can view the matching log"
         )
 
+    since = datetime.now(UTC) - timedelta(days=days)
     logs = (
         caller.db.table("matching_log")
-        .select("request_id, requested_at, called_as, response_ms, result, fallback_shown, candidate_count, leads_shown, model_ms, dropped_count, profiles(first_name, last_name)")
+        .select(LOG_FIELDS)
+        .gte("requested_at", since.isoformat())
         .order("requested_at", desc=True)
-        .limit(100)
+        .limit(MAX_ROWS)
         .execute()
     )
-
-    rows = []
-    # Flatten the joined profile into requested_by_name 
-    # (None if the staff row is gone)
-    for row in logs.data:
-        person = row.pop("profiles") or {}
-        name = " ".join(n for n in (person.get("first_name"), person.get("last_name")) if n)
-
-        rows.append({**row, "requested_by_name": name or None})
-    return rows
+    return logs.data
