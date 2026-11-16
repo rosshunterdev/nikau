@@ -57,3 +57,61 @@ def test_activity_detail_has_provider_and_suburb_names(api, headers):
     for field in ("provider_phone", "provider_email", "provider_website", "suburb_name"):
         assert field in body
     assert "checked_by_name" in body
+
+
+# --- SCRUM-129 fix 08: the rest of the activity form, and archiving ---
+
+MORE_DETAILS = {
+    "street_address": "12 Clay Street",
+    "joining": "drop_in",
+    "group_size": "under_10",
+    "physical_notes": "Seated at tables",
+    "sensory_notes": "Quiet room",
+    "bus_routes": "2, 3",
+    "walk_from_stop_minutes": 5,
+    "staff_support": "staff_can_assist",
+    "staff_experience": True,
+    "not_in_listing": "Whether there's an accessible toilet on site",
+    "check_method": "phone_call",
+}
+
+
+def test_new_activity_saves_the_extra_details(api, headers):
+    r = api.post("/activities", json={**new_activity(), **MORE_DETAILS}, headers=headers("cora"))
+    assert r.status_code == 201, r.text
+    body = r.json()
+    for field, value in MORE_DETAILS.items():
+        assert body[field] == value, field
+
+
+def test_editing_saves_the_extra_details_and_keeps_the_rest(api, headers):
+    r = api.post("/activities", json=new_activity(), headers=headers("cora"))
+    activity_id = r.json()["activity_id"]
+    r = api.patch(f"/activities/{activity_id}", json=MORE_DETAILS, headers=headers("cora"))
+    assert r.status_code == 200, r.text
+    assert r.json()["not_in_listing"] == MORE_DETAILS["not_in_listing"]
+
+    # Changing one field leaves the others as they were
+    r = api.patch(f"/activities/{activity_id}", json={"joining": "waitlist"}, headers=headers("cora"))
+    assert r.status_code == 200, r.text
+    assert r.json()["joining"] == "waitlist"
+    assert r.json()["check_method"] == "phone_call"
+
+
+def test_support_worker_cannot_archive_an_activity(api, headers):
+    r = api.post(f"/activities/{POTTERY}/archive", headers=headers("will"))
+    assert r.status_code == 403
+
+
+def test_coordinator_archives_an_activity(api, headers):
+    r = api.post("/activities", json=new_activity(), headers=headers("cora"))
+    activity_id = r.json()["activity_id"]
+
+    assert api.post(f"/activities/{activity_id}/archive", headers=headers("cora")).status_code == 204
+    # It leaves the catalogue but can still be opened (saved leads point to it)
+    listed = [a["activity_id"] for a in api.get("/activities", headers=headers("cora")).json()]
+    assert activity_id not in listed
+    r = api.get(f"/activities/{activity_id}", headers=headers("cora"))
+    assert r.json()["archived_at"] is not None
+    # Archiving twice says so
+    assert api.post(f"/activities/{activity_id}/archive", headers=headers("cora")).status_code == 409

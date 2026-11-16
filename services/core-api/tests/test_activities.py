@@ -191,3 +191,18 @@ def test_detail_without_checker_or_provider_has_empty_names():
         }
     )
     assert (row["provider_name"], row["suburb_name"], row["checked_by_name"]) == (None, None, None)
+
+
+# --- SCRUM-129 fix 08: the extra form fields are checked before they reach the database ---
+
+def test_unknown_check_method_is_rejected():
+    import pytest
+    from pydantic import ValidationError
+
+    from app.schemas.activities import ActivityUpdate
+
+    with pytest.raises(ValidationError):
+        ActivityUpdate(check_method="carrier_pigeon")
+    with pytest.raises(ValidationError):
+        ActivityUpdate(walk_from_stop_minutes=-1)
+    assert ActivityUpdate(joining="drop_in", group_size="10_to_20").joining == "drop_in"

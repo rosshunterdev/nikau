@@ -1,9 +1,10 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Plus, X } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import { DAYS, LEVELS, SLOTS, SUPPORT_NEEDED, TRANSPORT } from '../lib/options'
 import type { ClientDetail, Suburb, Tag } from '../lib/types'
+import FormSection from '../components/FormSection'
 import './ClientForm.css'
 
 // What the form holds while you type. Numbers stay as text until saving.
@@ -31,37 +32,6 @@ type FormState = {
 // Second-pass fields (SCRUM-94)
 const MAX_GOALS = 5
 const NOTES_HINT = 'Describe what helps or gets in the way, not a diagnosis. No names or places.'
-
-// SCRUM-129: one part of the form. On wide screens it's an open card with a heading,
-// like hi-fi 04, so nothing (including required fields) is hidden. On phones it's a
-// section you can open and close, with only the first one open to start.
-function FormSection(props: {
-  id: string
-  title: string
-  mi?: string // te reo name under the heading
-  wide: boolean
-  startOpen?: boolean // phones only
-  children: ReactNode
-}) {
-  const { id, title, mi, wide, startOpen, children } = props
-  if (!wide) {
-    return (
-      <details className="form-card" open={startOpen}>
-        <summary>{title}</summary>
-        {children}
-      </details>
-    )
-  }
-  return (
-    <section className="form-card" aria-labelledby={id}>
-      <h2 id={id} className="form-card-heading">
-        {title}
-        {mi && <span lang="mi">{mi}</span>}
-      </h2>
-      {children}
-    </section>
-  )
-}
 
 const EMPTY: FormState = {
   preferred_name: '',

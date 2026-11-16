@@ -86,6 +86,19 @@ export type ActivityDetail = {
   support_worker_policy: string | null
   checked_at: string | null
   checked_by: string | null
+  // SCRUM-129 fix 08: the rest of the form (hi-fi 11)
+  street_address: string | null
+  joining: string | null
+  group_size: string | null
+  physical_notes: string | null
+  sensory_notes: string | null
+  bus_routes: string | null
+  walk_from_stop_minutes: number | null
+  staff_support: string | null
+  staff_experience: boolean | null
+  not_in_listing: string | null
+  check_method: string | null
+  archived_at: string | null
   // SCRUM-129 fix 07: for the read-only Activity detail page
   checked_by_name: string | null
   provider_name: string | null
