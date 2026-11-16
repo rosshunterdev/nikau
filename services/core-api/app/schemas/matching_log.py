@@ -21,6 +21,5 @@ class MatchingLogEntry(BaseModel):
     leads_shown: int | None
     model_ms: int | None
     dropped_count: int | None
-    requested_by_name: str | None = None
 
 

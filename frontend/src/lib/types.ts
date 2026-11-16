@@ -185,5 +185,4 @@ export type MatchingLogEntry = {
   leads_shown: number | null
   model_ms: number | null
   dropped_count: number | null
-  requested_by_name: string | null
 }
