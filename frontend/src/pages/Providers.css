@@ -1,0 +1,172 @@
+/* SCRUM-129 fix 09: Providers list (hi-fi 12) and the provider form */
+
+/* ---- Header: title, te reo name, one line of intro, Add provider on the right ---- */
+.providers-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+/* The text takes the room, so Add provider stays on the right */
+.providers-header > div {
+  flex: 1 1 320px;
+}
+
+.providers-mi {
+  margin: 6px 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.providers-intro {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+/* ---- Search providers + Listing consent ---- */
+.providers-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.providers-toolbar label {
+  display: block;
+  margin: 0 0 6px;
+}
+
+.providers-search {
+  flex: 0 1 360px;
+  min-width: 240px;
+}
+
+/* The magnifying glass sits inside the box, on the left */
+.providers-search-box {
+  position: relative;
+}
+
+.providers-search-box svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.providers-search-box input {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 42px;
+}
+
+.providers-consent select {
+  margin: 0;
+}
+
+/* ---- The table, in one white card ---- */
+.providers-card {
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
+}
+
+.providers-table {
+  width: 100%;
+}
+
+.providers-table th,
+.providers-table td {
+  padding: 14px 20px;
+  vertical-align: middle;
+}
+
+.providers-table thead th {
+  background: var(--paper);
+  font-weight: 700;
+}
+
+/* Round the header's corners to match the card */
+.providers-table thead th:first-child {
+  border-top-left-radius: var(--radius);
+}
+
+.providers-table thead th:last-child {
+  border-top-right-radius: var(--radius);
+}
+
+.providers-table tbody th {
+  font-weight: 700;
+}
+
+.providers-table tbody tr:last-child th,
+.providers-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.providers-edit {
+  text-align: right;
+}
+
+.providers-edit a {
+  font-weight: 700;
+}
+
+/* Consent: green pill with a tick, or a dashed outline when not given */
+.consent-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.consent-given {
+  background: var(--mint);
+}
+
+.consent-missing {
+  border: 1px dashed var(--ink);
+}
+
+.providers-empty {
+  margin: 0;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius);
+}
+
+.providers-note {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ---- Provider form ---- */
+
+/* "The provider agreed to be listed": tick box and text on one line */
+.provider-consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 400;
+}
+
+.provider-consent-check input {
+  margin-top: 4px;
+}
+
+.provider-consent-date {
+  max-width: 18rem;
+}

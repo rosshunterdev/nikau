@@ -86,7 +86,7 @@ export default function ClientList() {
             />
           </div>
         </div>
-        <Link to="/clients/new" className="button button-outline">
+        <Link to="/clients/new" className="button button-primary">
           <Plus size={18} aria-hidden="true" />
           Add client
         </Link>
