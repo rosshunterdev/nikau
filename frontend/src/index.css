@@ -225,6 +225,7 @@ caption {
 /* Wide tables scroll inside their own box instead of the whole page */
 .table-scroll {
   overflow-x: auto;
+  position: relative;
 }
 
 /* Buttons side by side with a gap; they wrap onto a new line on narrow screens */
