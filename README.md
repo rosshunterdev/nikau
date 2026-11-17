@@ -2,18 +2,21 @@
 
 AI-assisted activity matching for disability support. Nīkau helps support coordinators and workers find suitable community activities for a client, and explains in plain English why each one was recommended.
 
-Built by Ross and Jove for SD205 (Integrated Studio III), Yoobee Colleges.
+Built by Ross and Jove for SD205 (Integrated Studio III), Yoobee Colleges. This is a student prototype: it uses fake data only and is not for real clients.
+
+**Live demo:** https://nikau-wheat.vercel.app (demo logins are in the submission document, not in this repo).
 
 ## What it does
 
-- Stores client profiles: interests, goals and accessibility needs
-- Keeps a catalog of community activities
-- Ranks catalog activities for a client and gives a short reason for each pick
-- Role-based sign-in for coordinators and workers
+- Stores client profiles: interests, goals, accessibility needs and sensory preferences
+- Keeps a shared catalogue of community activities and the providers who run them
+- Filters the catalogue for a client, then ranks the shortlist with Gemini and gives a short plain-English reason for each pick
+- Lets workers save leads from a match, and coordinators review a matching log (with CSV download)
+- Role-based sign-in: support workers see only the clients assigned to them, coordinators see their whole organisation (see [docs/access-rules.md](docs/access-rules.md))
 
 ## Getting started
 
-Requires Python 3.14, Node.js and Git. The local database also needs Docker Desktop and the Supabase CLI (see [Local database](#local-database)).
+Requires Python 3.14, Node.js 22 and Git. The local database also needs Docker Desktop and the Supabase CLI (see [Local database](#local-database)).
 
 ```bash
 git clone <repo-url>
@@ -38,6 +41,9 @@ Each part reads its own settings file. Copy each template, then fill in the blan
 - `CORS_ORIGINS` must be a JSON list, for example `["http://localhost:5173","http://localhost:5174"]`. A plain URL stops the Core API from starting.
 
 All `.env` files are git-ignored. Never commit real keys or paste them into chat, Jira or screenshots. Use different keys locally and on Vercel.
+
+### Run order
+Start the local database first (see [Local database](#local-database)), then the Core API, AI Matching and the frontend, each in its own terminal.
 
 ### Core API
 
@@ -73,19 +79,30 @@ npm run dev
 
 Open http://localhost:5173
 
+### Checks before a pull request
+CI runs these on every pull request, so run them first:
+
+| Part | Run from | Commands |
+| --- | --- | --- |
+| Core API | `services/core-api` (venv active) | `pip install -r requirements-dev.txt`, `ruff check .`, `python -m pytest` |
+| AI Matching | `services/ai-matching` (venv active) | `pip install -r requirements-dev.txt`, `ruff check .`, `python -m pytest` |
+| Frontend | `frontend` | `npm run lint`, `npm run build` |
+| Database | repo root | see [Database tests](#database-tests) |
+
 ## Project structure
 
 ```
 nikau/
 ├── .github/
 │   └── workflows/         # CI: frontend, core-api, ai-matching and database checks
-├── docs/                  # API contract, access rules, Gemini spike notes
+├── docs/                  # API contract, access rules, Gemini spike notes (docs/spikes)
 ├── fixtures/              # Sample clients and activities for tests and the spike
 ├── supabase/
 │   ├── config.toml        # Local Supabase settings
 │   ├── migrations/        # Database schema, applied in timestamp order
 │   ├── db-tests/          # SQL tests for access rules and save functions (run in CI)
 │   ├── seeds/             # Activity catalogue test data (loaded after seed.sql)
+│   ├── demo/              # demo_logins.sql: demo organisation for the hosted project (run by hand once)
 │   └── seed.sql           # Local test data only (never pushed to the hosted project)
 ├── services/
 │   ├── core-api/          # FastAPI service: clients, activities, leads, matching, database access
@@ -182,6 +199,26 @@ If `supabase start` fails on Windows with "forbidden by its access permissions",
 - Add or update a test file in `supabase/db-tests/` for any new rule or function.
 
 
+## Deployment
+
+| Part | Where | Notes |
+| --- | --- | --- |
+| Frontend | Vercel project `nikau-frontend` | Deploys on every push to `main` |
+| Core API | Vercel project `nikau-core-api` | Own environment variables (see the `.env.example` files) |
+| AI Matching | Vercel project `nikau-ai-matching` | `MATCHING_SERVICE_KEY` must match the Core API's |
+| Database | Hosted Supabase project | Code deploys do **not** change it |
+
+Database changes are separate from code deploys. After merging a migration, run `supabase db push` from the repo root (it is linked to the hosted project), then check `supabase migration list` shows Local and Remote match.
+The hosted project has no seed data. `supabase/demo/demo_logins.sql` creates the demo organisation once the two demo logins exist in the Supabase dashboard.
+Secrets live only in Vercel and in git-ignored `.env` files. Use different keys locally and on Vercel.
+
+## Known limitations
+- Prototype only: fake data, no real client information. A real version would need a paid AI tier that does not train on prompts.
+- Built desktop first. Phone layouts are only partly fixed (SCRUM-128).
+- AI explanations can contain small wording slips or filler (SCRUM-115).
+- The app can't delete clients or providers, and archiving an activity has no undo.
+- Activities are added by hand, so the catalogue grows slowly. Ideas for later are labelled `future-work` in Jira.
+
 ## Project management
 
 - Jira board and Confluence: https://sd205.atlassian.net
@@ -198,5 +235,4 @@ by Toitū Te Whenua Land Information New Zealand.
 
 ## Status
 
-- Sprint 1: tools setup and wireframes.
-- Sprint 2: architecture and foundations (in progress)
+Code freeze for the SD205 hand-in (21 Nov 2026): no new features, only fixes, testing and documentation.
