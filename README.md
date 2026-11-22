@@ -19,7 +19,7 @@ Built by Ross and Jove for SD205 (Integrated Studio III), Yoobee Colleges. This 
 Requires Python 3.14, Node.js 22 and Git. The local database also needs Docker Desktop and the Supabase CLI (see [Local database](#local-database)).
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/rosshunterdev/nikau.git
 cd nikau
 ```
 
